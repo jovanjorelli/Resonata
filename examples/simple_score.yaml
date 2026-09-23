@@ -1,0 +1,23 @@
+# Simple Melody - YAML equivalent of simple_score.json
+metadata:
+  title: Simple Melody
+  bpm: 120
+  time_signature: 4/4 # common time
+
+tracks:
+  - id: track_1
+    name: Ocarina Solo
+    instrument:
+      type: ocarina
+      parameters:
+        breath_noise: 0.3
+        vibrato_rate: 5.0
+    pan: 0.0
+    volume: 0.8
+    notes:
+      - {time: 0.0, duration: 0.5, pitch: 60, velocity: 0.8}
+      - {time: 0.5, duration: 0.5, pitch: 62, velocity: 0.8}
+      - time: 1.0
+        duration: 1.0
+        pitch: 64
+        velocity: 0.9

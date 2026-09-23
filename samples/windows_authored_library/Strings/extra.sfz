@@ -1,0 +1,7 @@
+// String layer pulled in through a Windows-style include path.
+<group>
+volume=-6
+
+<region>
+sample="..\Strings\VIOLIN sustain.wav" lokey=55 hikey=64 pitch_keycenter=60
+loop_mode=loop_continuous

@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "title": "Ocarina Echo",
+    "bpm": 120,
+    "time_signature": "4/4"
+  },
+  "tracks": [
+    {
+      "id": "ocarina_solo",
+      "name": "Ocarina Solo",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "breath_noise": 0.3,
+          "vibrato_rate": 5.0,
+          "vibrato_depth": 0.02,
+          "brightness": 0.9
+        }
+      },
+      "pan": 0.0,
+      "volume": 0.8,
+      "reverb_send": 0.25,
+      "delay": {
+        "mode": "pingpong",
+        "subdivision": "1/8d",
+        "feedback": 0.6,
+        "damping_hz": 4000,
+        "wet": 0.4,
+        "send": 0.5
+      },
+      "notes": [
+        {"time": 0.0, "duration": 0.5, "pitch": 69, "velocity": 0.85},
+        {"time": 0.75, "duration": 0.5, "pitch": 72, "velocity": 0.8},
+        {"time": 1.5, "duration": 0.75, "pitch": 76, "velocity": 0.85},
+        {"time": 2.5, "duration": 1.0, "pitch": 74, "velocity": 0.8},
+        {"time": 4.0, "duration": 1.5, "pitch": 72, "velocity": 0.75}
+      ]
+    }
+  ]
+}
