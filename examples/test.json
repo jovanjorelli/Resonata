@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "title": "SFZ Smoke Test",
+    "bpm": 120,
+    "time_signature": "4/4"
+  },
+  "tracks": [
+    {
+      "id": "piano",
+      "name": "Windows Grand",
+      "instrument": {
+        "type": "sampler",
+        "file": "samples/windows_authored_library/main.sfz"
+      },
+      "pan": 0.0,
+      "volume": 0.8,
+      "reverb_send": 0.2,
+      "notes": [
+        {"time": 0.0, "duration": 0.5, "pitch": 60, "velocity": 0.8},
+        {"time": 0.5, "duration": 0.5, "pitch": 64, "velocity": 0.8},
+        {"time": 1.0, "duration": 1.0, "pitch": 67, "velocity": 0.9}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+// Windows-authored orchestral sketch: backslash separators, mixed-case
+// references, and a nested include. On Linux the case-insensitive
+// resolver and path sanitizer recover every file.
+<control>
+default_path=Samples\
+
+<group>
+volume=-3
+ampeg_release=0.35
+
+<region>
+sample="grand piano\C4 LOUD.wav" lokey=60 hikey=64 pitch_keycenter=60
+lovel=1 hivel=100
+
+<region>
+sample="GRAND PIANO\c5 loud.wav" lokey=65 hikey=69 pitch_keycenter=67
+lovel=1 hivel=127
+
+#include "strings\EXTRA.sfz"

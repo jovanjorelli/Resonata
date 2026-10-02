@@ -1,0 +1,39 @@
+# Binaries
+bin/
+*.exe
+/resonata
+/orchestron
+/orchestron.exe
+
+# Test artifacts (generated renders; fixtures in test_data/ stay tracked)
+*.wav
+*.mid
+*.midi
+!test_data/*.mid
+!test_data/*.midi
+out.wav
+delay_test.wav
+test_output*.wav
+output*.wav
+render_result*.wav
+
+# Profiling
+*.prof
+coverage.out
+coverage.html
+cover_*.out
+bench_before.txt
+bench_after.txt
+
+# Editor and OS
+*~
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Sample libraries (large, user-provided)
+samples/**/*.wav

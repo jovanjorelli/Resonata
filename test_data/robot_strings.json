@@ -1,0 +1,1809 @@
+{
+  "metadata": {
+    "title": "Robot Strings (Quantized)",
+    "bpm": 120.0,
+    "time_signature": "4/4"
+  },
+  "tracks": [
+    {
+      "id": "vln1",
+      "name": "Violin I",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "brightness": 0.75,
+          "breath_noise": 0.25,
+          "vibrato_rate": 5.5,
+          "vibrato_depth": 0.02
+        }
+      },
+      "pan": -0.4,
+      "volume": 0.62,
+      "reverb_send": 0.35,
+      "eq": {
+        "hpf": 200,
+        "eq_mid": {
+          "freq": 3000,
+          "gain": 1.5,
+          "q": 1.2
+        }
+      },
+      "notes": [
+        {
+          "time": 0.0,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.25,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.5,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.75,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.0,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.25,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.5,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.75,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.0,
+          "duration": 0.25,
+          "pitch": 77,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.25,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.5,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.75,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.0,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.25,
+          "duration": 0.25,
+          "pitch": 74,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.5,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.75,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.0,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.25,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.5,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.75,
+          "duration": 0.25,
+          "pitch": 64,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.0,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.25,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.5,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.75,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.0,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.25,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.5,
+          "duration": 0.25,
+          "pitch": 74,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.75,
+          "duration": 0.25,
+          "pitch": 71,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.0,
+          "duration": 0.25,
+          "pitch": 74,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.25,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.5,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.75,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.0,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.25,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.5,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.75,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.0,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.25,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.5,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.75,
+          "duration": 0.25,
+          "pitch": 84,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.0,
+          "duration": 0.25,
+          "pitch": 84,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.25,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.5,
+          "duration": 0.25,
+          "pitch": 77,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.75,
+          "duration": 0.25,
+          "pitch": 74,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.0,
+          "duration": 0.25,
+          "pitch": 77,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.25,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.5,
+          "duration": 0.25,
+          "pitch": 84,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.75,
+          "duration": 0.25,
+          "pitch": 81,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.0,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.25,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.5,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.75,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.0,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.25,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.5,
+          "duration": 0.25,
+          "pitch": 79,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.75,
+          "duration": 0.25,
+          "pitch": 76,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.0,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.25,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.5,
+          "duration": 0.25,
+          "pitch": 64,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.75,
+          "duration": 0.25,
+          "pitch": 60,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.0,
+          "duration": 0.25,
+          "pitch": 64,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.25,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.5,
+          "duration": 0.25,
+          "pitch": 72,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.75,
+          "duration": 0.25,
+          "pitch": 69,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "vln2",
+      "name": "Violin II",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "brightness": 0.6,
+          "breath_noise": 0.3,
+          "vibrato_rate": 5.0,
+          "vibrato_depth": 0.015
+        }
+      },
+      "pan": -0.2,
+      "volume": 0.55,
+      "reverb_send": 0.35,
+      "eq": {
+        "hpf": 180
+      },
+      "notes": [
+        {
+          "time": 0.0,
+          "duration": 1.0,
+          "pitch": 64,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.0,
+          "duration": 1.0,
+          "pitch": 69,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.0,
+          "duration": 1.0,
+          "pitch": 65,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.0,
+          "duration": 1.0,
+          "pitch": 69,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.0,
+          "duration": 1.0,
+          "pitch": 64,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.0,
+          "duration": 1.0,
+          "pitch": 67,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.0,
+          "duration": 1.0,
+          "pitch": 62,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.0,
+          "duration": 1.0,
+          "pitch": 67,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.0,
+          "duration": 1.0,
+          "pitch": 64,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.0,
+          "duration": 1.0,
+          "pitch": 69,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.0,
+          "duration": 1.0,
+          "pitch": 65,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.0,
+          "duration": 1.0,
+          "pitch": 69,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.0,
+          "duration": 1.0,
+          "pitch": 64,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.0,
+          "duration": 1.0,
+          "pitch": 67,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.0,
+          "duration": 1.0,
+          "pitch": 62,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.0,
+          "duration": 1.0,
+          "pitch": 67,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "vla",
+      "name": "Viola",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "brightness": 0.55,
+          "breath_noise": 0.3,
+          "vibrato_rate": 4.5,
+          "vibrato_depth": 0.012
+        }
+      },
+      "pan": 0.3,
+      "volume": 0.5,
+      "reverb_send": 0.35,
+      "eq": {
+        "hpf": 150,
+        "eq_mid": {
+          "freq": 500,
+          "gain": -1.5,
+          "q": 1.0
+        }
+      },
+      "notes": [
+        {
+          "time": 0.0,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.5,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 0.75,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.0,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.25,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.5,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.75,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.0,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.25,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.5,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.75,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.0,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.5,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.75,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.0,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.5,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.75,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.0,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.25,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.5,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.75,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.0,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.25,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.5,
+          "duration": 0.225,
+          "pitch": 62,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.75,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.0,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.25,
+          "duration": 0.225,
+          "pitch": 62,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.5,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.75,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.0,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.5,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.75,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.0,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.25,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.5,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.75,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.0,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.25,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.5,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.75,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.0,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.5,
+          "duration": 0.225,
+          "pitch": 53,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.75,
+          "duration": 0.225,
+          "pitch": 57,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.0,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.25,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.5,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.75,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.0,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.25,
+          "duration": 0.225,
+          "pitch": 64,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.5,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.75,
+          "duration": 0.225,
+          "pitch": 60,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.0,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.25,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.5,
+          "duration": 0.225,
+          "pitch": 62,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.75,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.0,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.25,
+          "duration": 0.225,
+          "pitch": 62,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.5,
+          "duration": 0.225,
+          "pitch": 55,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.75,
+          "duration": 0.225,
+          "pitch": 59,
+          "velocity": 0.7,
+          "articulation": {
+            "type": "staccato",
+            "params": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "vc",
+      "name": "Cello",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "brightness": 0.4,
+          "breath_noise": 0.35,
+          "vibrato_rate": 4.0,
+          "vibrato_depth": 0.01
+        }
+      },
+      "pan": 0.15,
+      "volume": 0.6,
+      "reverb_send": 0.3,
+      "eq": {
+        "hpf": 60,
+        "eq_low": {
+          "freq": 120,
+          "gain": 2,
+          "q": 0.8
+        }
+      },
+      "notes": [
+        {
+          "time": 0.0,
+          "duration": 1.0,
+          "pitch": 45,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 1.0,
+          "duration": 1.0,
+          "pitch": 45,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.0,
+          "duration": 1.0,
+          "pitch": 41,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 3.0,
+          "duration": 1.0,
+          "pitch": 41,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.0,
+          "duration": 1.0,
+          "pitch": 48,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 5.0,
+          "duration": 1.0,
+          "pitch": 48,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.0,
+          "duration": 1.0,
+          "pitch": 43,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 7.0,
+          "duration": 1.0,
+          "pitch": 43,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.0,
+          "duration": 1.0,
+          "pitch": 45,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 9.0,
+          "duration": 1.0,
+          "pitch": 45,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.0,
+          "duration": 1.0,
+          "pitch": 41,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 11.0,
+          "duration": 1.0,
+          "pitch": 41,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.0,
+          "duration": 1.0,
+          "pitch": 48,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 13.0,
+          "duration": 1.0,
+          "pitch": 48,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.0,
+          "duration": 1.0,
+          "pitch": 43,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        },
+        {
+          "time": 15.0,
+          "duration": 1.0,
+          "pitch": 43,
+          "velocity": 0.75,
+          "articulation": {
+            "type": "legato",
+            "params": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "cb",
+      "name": "Contrabass",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "brightness": 0.3,
+          "breath_noise": 0.35,
+          "vibrato_rate": 3.5,
+          "vibrato_depth": 0.008
+        }
+      },
+      "pan": 0.0,
+      "volume": 0.55,
+      "reverb_send": 0.25,
+      "eq": {
+        "hpf": 35
+      },
+      "notes": [
+        {
+          "time": 0.0,
+          "duration": 2.0,
+          "pitch": 33,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 2.0,
+          "duration": 2.0,
+          "pitch": 29,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 4.0,
+          "duration": 2.0,
+          "pitch": 36,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 6.0,
+          "duration": 2.0,
+          "pitch": 31,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 8.0,
+          "duration": 2.0,
+          "pitch": 33,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 10.0,
+          "duration": 2.0,
+          "pitch": 29,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 12.0,
+          "duration": 2.0,
+          "pitch": 36,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        },
+        {
+          "time": 14.0,
+          "duration": 2.0,
+          "pitch": 31,
+          "velocity": 0.8,
+          "articulation": {
+            "type": "tenuto",
+            "params": {}
+          }
+        }
+      ]
+    }
+  ]
+}

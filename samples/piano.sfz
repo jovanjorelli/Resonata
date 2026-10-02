@@ -1,0 +1,5 @@
+
+loop_mode=no_loop
+
+ sample=c4.wav lokey=60 hikey=64 pitch_keycenter=60
+ sample=c5.wav lokey=65 hikey=69 pitch_keycenter=67

@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "title": "EQ Sculpt Demo",
+    "bpm": 120,
+    "time_signature": "4/4"
+  },
+  "tracks": [
+    {
+      "id": "muddy_strings",
+      "name": "Muddy Strings",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "breath_noise": 0.35,
+          "brightness": 0.9,
+          "vibrato_depth": 0.0,
+          "vibrato_rate": 5.0
+        }
+      },
+      "pan": 0.0,
+      "volume": 0.7,
+      "reverb_send": 0.0,
+      "eq": {
+        "hpf": 100.0,
+        "eq_low": {"freq": 150.0, "gain": 2.0, "q": 0.7},
+        "eq_mid": {"freq": 440.0, "gain": -8.0, "q": 1.0},
+        "eq_high": {"freq": 6000.0, "gain": 4.0, "q": 0.7}
+      },
+      "notes": [
+        {
+          "time": 0.5,
+          "duration": 2.5,
+          "pitch": 57,
+          "velocity": 0.9,
+          "articulation": {"type": "legato", "params": {}}
+        }
+      ]
+    },
+    {
+      "id": "control_ocarina",
+      "name": "Control Ocarina",
+      "instrument": {
+        "type": "ocarina",
+        "parameters": {
+          "breath_noise": 0.3,
+          "brightness": 0.8,
+          "vibrato_depth": 0.0,
+          "vibrato_rate": 5.0
+        }
+      },
+      "pan": 0.0,
+      "volume": 0.7,
+      "reverb_send": 0.0,
+      "notes": [
+        {"time": 3.5, "duration": 2.5, "pitch": 64, "velocity": 0.9}
+      ]
+    }
+  ]
+}

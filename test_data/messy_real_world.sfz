@@ -1,0 +1,58 @@
+/* Symphony Woods - exported by a hypothetical vendor tool.
+   Deliberately messy: mixed comment styles, stray characters, unknown
+   vendor opcodes, pitch-name keys, and legacy LFO names. */
+
+// line comment
+# hash comment
+; semicolon comment
+/ lone slash typo
+
+<control>
+default_path=Symphony Woods/
+
+<global>
+ampeg_attack=0.005 ampeg_release=0.4
+volume=-1.5
+lokey=c4 hikey=c6
+gui_knob7=128 vendor_randomizer=on // unknown vendor opcodes
+
+<group>
+group_label=Woodwinds
+amp_lfo_freq=5.2 amp_lfo_depth=2
+eq2_freq=1200 eq2_bw=1.4 eq2_gain=-1.5
+sw_lokey=c0 sw_hikey=c2 sw_default=c1
+
+<region>
+sample=Woods/pno c4 loud.wav lokey=c4 hikey=c#4 pitch_keycenter=c4
+	lovel=1 hivel=100 offset=120 end=44000
+loop_mode=loop_continuous loop_start=800 loop_end=43000 loop_crossfade=20
+transpose=-12 tune=+3 pitch_keytrack=100
+ampeg_attack=0.01 ampeg_sustain=80 ampeg_release=0.35
+lfo01_freq=5 lfo01_volume=1.2 lfo02_freq=0.4 lfo02_pan=0.5
+fil_type=LPF_2p cutoff=2500 resonance=6
+off_by=1 off_mode=fast polyphony=8 trigger=attack
+label=Flute fallback
+
+<effect>
+type=chorus mix=30
+
+<curve>
+v3=1
+
+<region>
+sample = Woods/eb2 soft.wav ; trailing semicolon comment
+key=eb2 lovel=101 hivel=127 count=0
+rt_decay=0.5 amp_veltrack=-50 bend_up=200 bend_down=-200
+pitcheg_depth=1200 pitcheg_attack=0.02
+fileg_depth=-3600 fileg_attack=0.1
+eq1_freq=200 eq1_bw=1.0 eq1_gain=+3
+
+<region>
+sample=Woods/broken
+
+<region>
+lokey=abc volume=12db pan=50
+hikey=zzz
+
+<region>
+sample=Tail/no_newline.wav hikey=g9 pitch_keycenter=c#-1
