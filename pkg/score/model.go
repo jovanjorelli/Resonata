@@ -42,7 +42,17 @@ type Track struct {
 	ReverbSend float32       `json:"reverb_send,omitempty"` // 0.0 to 1.0 master reverb send
 	EQ         TrackEQ       `json:"eq,omitempty"`          // per-track parametric sculpt
 	Delay      *TrackDelay   `json:"delay,omitempty"`       // per-track echo send and space
+	Pedal      []PedalEvent  `json:"pedal,omitempty"`       // sustain-pedal moves; empty means never pressed
 	Notes      []NoteEvent   `json:"notes"`
+}
+
+// PedalEvent is one sustain-pedal (CC64) move at an absolute time in
+// seconds: Down true presses the pedal (value >= 64), false releases it.
+// While held, note-offs defer voice release so notes ring naturally;
+// release stops every held voice. Events apply per track in time order.
+type PedalEvent struct {
+	Time float64 `json:"time"` // seconds, >= 0
+	Down bool    `json:"down"` // true presses, false releases
 }
 
 // TrackDelay configures the stereo echo for one track. Every track
@@ -79,7 +89,7 @@ type TrackEQ struct {
 // InstrumentDef selects the sound source for a track. Synthesized
 // instruments need only Type; sampler instruments reference an SFZ file.
 type InstrumentDef struct {
-	Type       string             `json:"type"`                 // "sampler", "ocarina"
+	Type       string             `json:"type"`                 // "synth", "sampler", "ocarina"
 	File       string             `json:"file,omitempty"`       // SFZ file path
 	Parameters map[string]float32 `json:"parameters,omitempty"` // instrument-specific knobs
 }
@@ -258,9 +268,9 @@ type RoomConfig struct {
 
 // Room selects a track's acoustic space, overriding the master reverb
 // preset for that track's send. It decodes from either a preset-name
-// string ("cathedral", "hall", "room", "none") or an object with size,
-// damping, and width. Absent (nil) means the track uses the master
-// reverb. "none" renders the track dry.
+// string ("cathedral", "hall", "chapel", "room", "plate", "none") or an
+// object with size, damping, and width. Absent (nil) means the track uses
+// the master reverb. "none" renders the track dry.
 type Room struct {
 	IsPreset bool
 	Preset   string
@@ -268,7 +278,7 @@ type Room struct {
 }
 
 // roomPresets lists the preset names accepted as a room string.
-var roomPresets = []string{"cathedral", "hall", "room", "none"}
+var roomPresets = []string{"cathedral", "hall", "chapel", "room", "plate", "none"}
 
 // IsRoomPreset reports whether name is an accepted room preset.
 func IsRoomPreset(name string) bool {

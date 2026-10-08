@@ -8,9 +8,12 @@ import "math"
 // Loop modes recognized in Region.LoopMode. Only loop_continuous engages
 // playback looping; any other stored value behaves as no loop.
 const (
-	LoopNoLoop     = "no_loop"
+	// LoopNoLoop disables looping: the voice plays once to the sample end.
+	LoopNoLoop = "no_loop"
+	// LoopContinuous loops the [LoopStart, LoopEnd) window until note-off.
 	LoopContinuous = "loop_continuous"
-	LoopOneShot    = "one_shot" // plays to the sample end, ignoring note-off
+	// LoopOneShot plays to the sample end, ignoring note-off
+	LoopOneShot = "one_shot"
 )
 
 // EGParams holds one SFZ envelope generator. Times are seconds, Sustain

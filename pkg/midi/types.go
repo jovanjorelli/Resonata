@@ -16,30 +16,52 @@ const (
 // EventType classifies a parsed track event.
 type EventType uint8
 
-// Event types: the seven channel messages plus sysex and meta.
+// Event types: the seven channel messages plus sysex and meta. The
+// trailing hex shows each status nibble; the low nibble is the channel.
 const (
-	EventNoteOff         EventType = iota // 0x8n
-	EventNoteOn                           // 0x9n
-	EventPolyPressure                     // 0xAn
-	EventControlChange                    // 0xBn
-	EventProgramChange                    // 0xCn
-	EventChannelPressure                  // 0xDn
-	EventPitchBend                        // 0xEn
-	EventSysex                            // 0xF0/0xF7 (and rare system-common)
-	EventMeta                             // 0xFF
+	// EventNoteOff is a key release (0x8n) carrying note and velocity.
+	EventNoteOff EventType = iota // 0x8n
+	// EventNoteOn starts a note (0x9n); velocity 0 counts as note-off.
+	EventNoteOn // 0x9n
+	// EventPolyPressure is per-key pressure (0xAn).
+	EventPolyPressure // 0xAn
+	// EventControlChange is a controller update (0xBn).
+	EventControlChange // 0xBn
+	// EventProgramChange selects an instrument (0xCn, one data byte).
+	EventProgramChange // 0xCn
+	// EventChannelPressure is whole-channel pressure (0xDn).
+	EventChannelPressure // 0xDn
+	// EventPitchBend is a 14-bit bend around center (0xEn).
+	EventPitchBend // 0xEn
+	// EventSysex is a system-exclusive dump (0xF0/0xF7, and rare system-common).
+	EventSysex // 0xF0/0xF7 (and rare system-common)
+	// EventMeta is a file meta event (0xFF) such as tempo or track name.
+	EventMeta // 0xFF
 )
 
-// Meta event types of interest.
+// Meta event types of interest, stored in Event.Data1 with the payload
+// in Event.Data.
 const (
-	MetaText          = 0x01
-	MetaCopyright     = 0x02
-	MetaTrackName     = 0x03
-	MetaInstrument    = 0x04
-	MetaMarker        = 0x06
-	MetaEndOfTrack    = 0x2F
-	MetaTempo         = 0x51
+	// MetaText is free-form text (0x01).
+	MetaText = 0x01
+	// MetaCopyright carries the copyright notice (0x02).
+	MetaCopyright = 0x02
+	// MetaTrackName names the track (0x03); the importer uses the first
+	// non-empty one as the score title.
+	MetaTrackName = 0x03
+	// MetaInstrument names the instrument (0x04).
+	MetaInstrument = 0x04
+	// MetaMarker is a rehearsal marker (0x06).
+	MetaMarker = 0x06
+	// MetaEndOfTrack terminates the track (0x2F).
+	MetaEndOfTrack = 0x2F
+	// MetaTempo sets microseconds per quarter note (0x51); the importer
+	// derives BPM from the first one, defaulting to 120 BPM.
+	MetaTempo = 0x51
+	// MetaTimeSignature sets numerator/denominator (0x58).
 	MetaTimeSignature = 0x58
-	MetaKeySignature  = 0x59
+	// MetaKeySignature records the key (0x59); it does not affect pitch.
+	MetaKeySignature = 0x59
 )
 
 // Event is one parsed SMF event at an absolute tick position.

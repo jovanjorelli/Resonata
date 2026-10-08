@@ -10,9 +10,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,8 +25,8 @@ import (
 	"resonata/pkg/score"
 )
 
-// Version is the Resonata release version, pinned at 1.0.
-const Version = "1.0"
+// Version is the Resonata release version, pinned at 2.
+const Version = "2"
 
 // CLIConfig holds all command line options for the headless renderer.
 type CLIConfig struct {
@@ -39,9 +41,12 @@ type CLIConfig struct {
 	Channels   int    // --channels=1|2
 
 	// Audio processing
-	Humanize     float64 // --humanize=0.0..1.0
-	ReverbPreset string  // --reverb=cathedral|hall|chapel|room|plate|none
-	MasterGain   float64 // --master-gain=0.0..1.0
+	Humanize      float64 // --humanize=0.0..1.0
+	ReverbPreset  string  // --reverb=cathedral|hall|chapel|room|plate|none
+	ReverbDamping float64 // --reverb-damping=0.0..1.0, -1 keeps preset
+	NoiseGate     float64 // --noise-gate dBFS, 0 disables, negative sets threshold
+	MasterGain    float64 // --master-gain=0.0..1.0
+	Saturation    string  // --saturation=tape|clean (default: tape)
 
 	// MIDI interoperability
 	ImportMIDI string // --import-midi=in.mid
@@ -53,6 +58,9 @@ type CLIConfig struct {
 	ProfileMem string // --profile-mem=mem.prof
 	Verbose    bool   // -v, --verbose
 	Benchmark  bool   // --benchmark (renders 10x and reports avg time)
+	Limiter    bool   // --limiter (mastering limiter after soft clipper)
+	Parallel   bool   // --parallel (voice tracks concurrently, sum sequentially)
+	MonoBass   string // --mono-bass=off|Hz (default: off)
 
 	// Batch processing
 	BatchDir string // --batch-dir=./scores (render all score files)
@@ -61,33 +69,93 @@ type CLIConfig struct {
 	LoadSFZ string // --load-sfz=path.sfz (validate an SFZ library, then render)
 
 	// Release information
-	ShowVersion bool // --version: print Resonata v1.0 and exit
+	ShowVersion bool // --version: print Resonata v2 and exit
 }
 
 // parseFlags reads command line flags into a CLIConfig.
 func parseFlags() *CLIConfig {
 	cfg := &CLIConfig{}
+	// --score string, default "": input score file (JSON or YAML);
+	// empty falls back to --import-midi, else the run errors.
 	flag.StringVar(&cfg.ScorePath, "score", "", "input score file (JSON or YAML)")
+	// -s: shorthand alias writing the same ScorePath field.
 	flag.StringVar(&cfg.ScorePath, "s", "", "input score file, shorthand")
+	// --output string, default "" (rendered as out.wav): output WAV path.
 	flag.StringVar(&cfg.OutputPath, "output", "", "output WAV path")
+	// -o: shorthand alias writing the same OutputPath field.
 	flag.StringVar(&cfg.OutputPath, "o", "", "output WAV path, shorthand")
+	// --mode string, default "offline": only offline and stream are
+	// accepted; both render identically, anything else errors.
 	flag.StringVar(&cfg.RenderMode, "mode", "offline", "render mode: offline|stream")
+	// --sample-rate int, default 48000: only 44100, 48000, 96000 render;
+	// other values are rejected by the encoder.
 	flag.IntVar(&cfg.SampleRate, "sample-rate", engine.DefaultSampleRate, "sample rate in Hz: 44100, 48000, or 96000")
+	// --bit-depth string, default "24": 16/24/32 integer PCM or 32f float;
+	// empty also selects 24-bit PCM; unknown names error.
 	flag.StringVar(&cfg.BitDepth, "bit-depth", "24", "WAV bit depth: 16, 24, 32 (PCM) or 32f (32-bit float)")
+	// --channels int, default 2: 1 downmixes stereo to mono, 2 keeps
+	// stereo; other counts error.
 	flag.IntVar(&cfg.Channels, "channels", 2, "output channels: 1 (mono) or 2 (stereo)")
+	// --humanize float 0.0-1.0, default 0: deterministic timing/velocity
+	// variation (fixed seed 1); 0 disables it.
 	flag.Float64Var(&cfg.Humanize, "humanize", 0, "humanization strength 0.0..1.0")
+	// --reverb preset name, default "hall": selects the master reverb
+	// space; none/off/dry bypass it, unknown names keep the default.
 	flag.StringVar(&cfg.ReverbPreset, "reverb", "hall", "reverb preset: cathedral|hall|chapel|room|plate|none")
+	// --reverb-damping float 0.0-1.0, default -1 (keep preset damping):
+	// 0.0 disables the feedback lowpass for a bright tail, 1.0 applies
+	// the maximum cutoff; anything else errors.
+	flag.Float64Var(&cfg.ReverbDamping, "reverb-damping", -1, "reverb HF damping 0.0-1.0 (default -1: preset)")
+	// --noise-gate float dBFS, default 0 (disabled): negative values mute
+	// per-voice sampler output below the threshold (e.g. -50); positive
+	// values are rejected.
+	flag.Float64Var(&cfg.NoiseGate, "noise-gate", 0, "voice noise gate threshold in dBFS (default 0: off)")
+	// --master-gain float 0.0-1.0, default 1.0: output multiplier applied
+	// before encoding; out-of-range values clamp into range.
 	flag.Float64Var(&cfg.MasterGain, "master-gain", 1.0, "master gain 0.0..1.0")
+	// --saturation string, default "tape": tape keeps tanh saturation,
+	// clean passes signal linearly with a hard clamp at ±1; anything
+	// else errors.
+	flag.StringVar(&cfg.Saturation, "saturation", "tape", "saturation: tape|clean")
+	// --import-midi path, default "": renders a Standard MIDI File
+	// (format 0/1) instead of --score when non-empty.
 	flag.StringVar(&cfg.ImportMIDI, "import-midi", "", "Standard MIDI File to import and render")
+	// --export-midi path, default "": writes the loaded score as a
+	// format-1 SMF after rendering.
 	flag.StringVar(&cfg.ExportMIDI, "export-midi", "", "export the loaded score to an SMF (.mid) file")
+	// --export-json path, default "": with --import-midi, also writes the
+	// imported score as JSON.
 	flag.StringVar(&cfg.ExportJSON, "export-json", "", "with --import-midi: write imported score as JSON")
+	// --profile-cpu path, default "": writes a pprof CPU profile covering
+	// the render.
 	flag.StringVar(&cfg.ProfileCPU, "profile-cpu", "", "write CPU profile to file")
+	// --profile-mem path, default "": writes a heap profile after render.
 	flag.StringVar(&cfg.ProfileMem, "profile-mem", "", "write memory profile to file")
+	// --verbose bool, default false: human-readable progress and paths.
 	flag.BoolVar(&cfg.Verbose, "verbose", false, "verbose output")
+	// -v: shorthand alias for --verbose.
 	flag.BoolVar(&cfg.Verbose, "v", false, "verbose output, shorthand")
+	// --benchmark bool, default false: renders 10x in memory, reports the
+	// average, then still writes the WAV.
 	flag.BoolVar(&cfg.Benchmark, "benchmark", false, "render 10x in memory and report average time")
+	// --limiter bool, default false: routes the master bus through the
+	// lookahead limiter (-0.1 dBFS ceiling) after the soft clipper.
+	flag.BoolVar(&cfg.Limiter, "limiter", false, "mastering limiter after soft clipper")
+	// --parallel bool, default false: voices each track in its own
+	// goroutine from a shared pool, then sums sequentially in track
+	// order, so output stays byte-identical to sequential rendering.
+	flag.BoolVar(&cfg.Parallel, "parallel", false, "parallel per-track voicing, sequential sum")
+	// --mono-bass off|Hz, default "off": integer cutoff frequency folds
+	// bass to mono; "off" disables.
+	flag.StringVar(&cfg.MonoBass, "mono-bass", "off", "mono bass crossover: off or cutoff Hz")
+	// --batch-dir path, default "": renders every score/MIDI file in the
+	// directory with an isolated engine each, then exits.
 	flag.StringVar(&cfg.BatchDir, "batch-dir", "", "render all score files in directory")
+	// --load-sfz path, default "": validates an SFZ library and reports
+	// regions before the score render proceeds.
 	flag.StringVar(&cfg.LoadSFZ, "load-sfz", "", "validate an SFZ library before rendering")
+	// --version bool, default false: prints the pinned release and exits
+	// before any render.
 	flag.BoolVar(&cfg.ShowVersion, "version", false, "print Resonata version and exit")
 
 	// Backward compatible aliases for the pre-headless CLI.
@@ -105,6 +173,16 @@ func parseFlags() *CLIConfig {
 }
 
 func main() {
+	// Render pipeline order: parse flags -> optional batch dir (renders a
+	// whole directory and exits) -> optional SFZ validation -> load score
+	// (file or MIDI import) -> optional humanize (fixed seed, so takes
+	// are reproducible) -> optional benchmark -> block render to WAV with
+	// progress on stderr and the summary on stdout -> optional MIDI
+	// export. The render loop disables the garbage collector around the
+	// file write (see renderToFile) so no GC pause can stall a long
+	// render. Rendered audio is deterministic: fixed seeds drive all
+	// randomness on a single-goroutine audio path, and wall-clock time
+	// only feeds progress/benchmark reporting, never samples.
 	log.SetPrefix("resonata: ")
 	log.SetFlags(0)
 	cfg := parseFlags()
@@ -317,6 +395,20 @@ func renderToFile(cfg *CLIConfig, s *score.Score, progress chan<- float64) (rend
 		return stats, err
 	}
 	applyReverbPreset(eng, cfg.ReverbPreset)
+	if err := applySaturation(eng, cfg.Saturation); err != nil {
+		return stats, err
+	}
+	if err := applyReverbDamping(eng, cfg.ReverbDamping); err != nil {
+		return stats, err
+	}
+	if err := applyNoiseGate(eng, cfg.NoiseGate); err != nil {
+		return stats, err
+	}
+	eng.Mixer().SetLimiterEnabled(cfg.Limiter)
+	eng.Mixer().SetParallel(cfg.Parallel)
+	if err := applyMonoBass(eng, cfg.MonoBass); err != nil {
+		return stats, err
+	}
 	gain := float32(cfg.MasterGain)
 	if !(gain >= 0) || gain > 1 {
 		if gain < 0 {
@@ -454,6 +546,7 @@ func runBenchmark(cfg *CLIConfig, s *score.Score) (time.Duration, error) {
 			return 0, err
 		}
 		applyReverbPreset(eng, cfg.ReverbPreset)
+		eng.Mixer().SetParallel(cfg.Parallel)
 		total := eng.TotalFrames()
 		done := 0
 		for done < total {
@@ -466,6 +559,69 @@ func runBenchmark(cfg *CLIConfig, s *score.Score) (time.Duration, error) {
 		}
 	}
 	return time.Since(start) / runs, nil
+}
+
+// applySaturation selects the master clipper mode: tape keeps tanh
+// saturation (the default), clean passes signal linearly with a hard
+// clamp at ±1. Unknown names are rejected so typos never render silently.
+func applySaturation(eng *engine.Engine, mode string) error {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "", "tape":
+		eng.Mixer().SetSaturationBypass(false)
+		return nil
+	case "clean":
+		eng.Mixer().SetSaturationBypass(true)
+		return nil
+	default:
+		return fmt.Errorf("unknown --saturation %q (want tape|clean)", mode)
+	}
+}
+
+// applyReverbDamping overrides the HF air-absorption on every reverb
+// instance when d is in [0, 1]: 0.0 is a bright tail with no feedback
+// lowpass, 1.0 is the maximum cutoff. Negative values keep the preset
+// damping so the default render is byte-identical; anything else is
+// rejected so typos never render silently.
+func applyReverbDamping(eng *engine.Engine, d float64) error {
+	if d < 0 {
+		return nil
+	}
+	if d > 1 || math.IsNaN(d) {
+		return fmt.Errorf("unknown --reverb-damping %v (want 0.0-1.0)", d)
+	}
+	eng.Mixer().SetReverbDamping(float32(d))
+	return nil
+}
+
+// applyNoiseGate sets the sampler voice noise-gate threshold in dBFS:
+// 0 (the default) disables the gate so output is byte-identical,
+// negative values mute sub-threshold voice output. Positive or NaN
+// values are rejected.
+func applyNoiseGate(eng *engine.Engine, db float64) error {
+	if db == 0 {
+		return nil
+	}
+	if !(db < 0) {
+		return fmt.Errorf("unknown --noise-gate %v (want 0 or negative dBFS)", db)
+	}
+	eng.SetNoiseGateDB(db)
+	return nil
+}
+
+// applyMonoBass sets the mono-bass crossover: "off" (the default)
+// disables it so output is byte-identical, otherwise an integer cutoff
+// frequency in Hz folds bass to mono. Anything else is rejected.
+func applyMonoBass(eng *engine.Engine, s string) error {
+	v := strings.ToLower(strings.TrimSpace(s))
+	if v == "" || v == "off" {
+		return nil
+	}
+	hz, err := strconv.Atoi(v)
+	if err != nil || hz <= 0 {
+		return fmt.Errorf("unknown --mono-bass %q (want off or cutoff Hz)", s)
+	}
+	eng.Mixer().SetMonoBassCutoff(float32(hz))
+	return nil
 }
 
 // exportMIDIFile converts a score into a format-1 Standard MIDI File.

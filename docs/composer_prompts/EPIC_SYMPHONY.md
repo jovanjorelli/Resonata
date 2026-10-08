@@ -3,9 +3,10 @@
 Generate a full epic orchestral symphony as a Resonata JSON score.
 Output **only** the JSON document — no prose, no fences, no comments.
 Times are seconds (`beat × 60 / bpm`); pitches are MIDI (60 = C4).
-Resonata has two instrument types: `ocarina` (procedural reference
-voice, no files) and `sampler` (needs an existing SFZ `file`). Map each
-orchestral section onto one of these two types.
+Resonata has three instrument types: `ocarina` (procedural reference
+voice, no files), `synth` (subtractive voice, no files), and `sampler`
+(needs an existing SFZ `file`). Map each
+orchestral section onto one of these three types.
 
 ## Required sections
 
@@ -44,7 +45,7 @@ orchestral section onto one of these two types.
 
 - Target duration: 2–5 minutes
 - All pitches 0–127, velocities 0–1, times ≥ 0 and sorted per track
-- Delay `feedback` below 0.98; at most eight tracks with `delay`
+- Delay `feedback` below 0.98; each track with `delay` owns an independent echo.
 - Reverb sends: strings 0.5–0.7, woodwinds 0.3–0.5, brass 0.2–0.4,
   percussion 0.1–0.3, solo 0.6–0.9
 - Key changes via `transpose` (global in `metadata`, per-track on

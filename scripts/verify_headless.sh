@@ -1,4 +1,12 @@
 #!/bin/bash
+# Headless build gate: proves the renderer ships as a static, GUI-free
+# binary on Linux and cross-compiles to Windows.
+# Usage: ./scripts/verify_headless.sh (run from anywhere; it cds to the repo root)
+# Expected output: ldd verdict, "Binary size: N bytes",
+#   "PASS: Headless binary is clean, N bytes", then
+#   "PASS: Windows cross-compile succeeded".
+# Exit codes: 0 when both builds pass and the Linux binary stays under
+#   15 MB with no CGO/GUI linkage; 1 on any failure above.
 set -e
 cd "$(dirname "$0")/.."
 

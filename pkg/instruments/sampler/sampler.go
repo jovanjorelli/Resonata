@@ -89,6 +89,8 @@ type Voice struct {
 	loopStart  float64
 	loopEnd    float64
 	end        float64 // exclusive end frame; 0 = whole sample
+	gate       float32 // noise-gate threshold, linear magnitude; 0 mutes nothing
+	pedalHeld  bool    // note-off deferred by the sustain pedal; released on pedal-up
 
 	// Loop crossfade state. When a looping voice plays the last
 	// loopCrossfadeSamples source frames of its loop, it mixes the
@@ -261,6 +263,13 @@ func (v *Voice) Process(buffer []float32, deltaTime float64) {
 				v.stealFadeProgress = 1
 			}
 		}
+		// Noise gate: sub-threshold voice output mutes to zero, keeping
+		// sample hiss out of quiet tails and pauses. The threshold is
+		// precomputed at setup; this is one comparison, no allocation.
+		// A zero threshold never mutes, preserving default output exactly.
+		if thr := float64(v.gate); thr > 0 && out < thr && out > -thr {
+			out = 0
+		}
 		buffer[i] = float32(out)
 
 		if v.Envelope.Stage() == dsp.StageIdle {
@@ -426,6 +435,12 @@ type Sampler struct {
 	release float64
 
 	masterGain float32
+	// gateLin is the per-voice noise-gate threshold as a linear
+	// magnitude, converted once from decibels; 0 disables the gate.
+	gateLin float32
+	// pedalDown is the sustain-pedal (CC64 >= 64) state: while set,
+	// note-offs mark voices pedal-held instead of releasing them.
+	pedalDown bool
 }
 
 // New returns an empty sampler rendering at sampleRate Hz. Load a parsed
@@ -465,8 +480,8 @@ func LoadFile(path string, sampleRate float64) (*Sampler, error) {
 	return s, nil
 }
 
-// Load binds an SFZ definition, silencing all voices and restarting
-// every round-robin sequence at position 1.
+// Load binds an SFZ definition, silencing all voices, releasing the
+// sustain pedal, and restarting every round-robin sequence at position 1.
 func (s *Sampler) Load(f *SFZFile) {
 	s.sfz = f
 	for i := range s.voices {
@@ -482,9 +497,11 @@ func (s *Sampler) Load(f *SFZFile) {
 		v.stealFree = false
 		v.pendingRegion = nil
 		v.pendingRelease = false
+		v.pedalHeld = false
 		v.trackedPitch = -1
 		v.crossfadeGain = 1
 	}
+	s.pedalDown = false
 	for k := range s.pitchTrack {
 		s.pitchTrack[k].n = 0
 	}
@@ -927,12 +944,41 @@ func (s *Sampler) NoteOff(pitch int) {
 			continue
 		}
 		if !v.releasing && v.Pitch == pitch && v.Region.LoopMode != LoopOneShot {
+			if s.pedalDown {
+				// Sustain pedal held: defer release, keep ringing.
+				v.pedalHeld = true
+				continue
+			}
 			v.Envelope.Release()
 			v.releasing = true
 			v.ReleaseTime = s.clock
 		}
 	}
 }
+
+// SetPedal presses (down true, CC64 >= 64) or releases the sustain
+// pedal. Releasing stops every pedal-held voice. Setup- and
+// event-time only; the audio loop reads plain flags.
+func (s *Sampler) SetPedal(down bool) {
+	s.pedalDown = down
+	if down {
+		return
+	}
+	for i := range s.voices {
+		v := &s.voices[i]
+		if v.Active && v.pedalHeld {
+			v.pedalHeld = false
+			if !v.releasing && v.Region.LoopMode != LoopOneShot {
+				v.Envelope.Release()
+				v.releasing = true
+				v.ReleaseTime = s.clock
+			}
+		}
+	}
+}
+
+// PedalDown reports whether the sustain pedal is held.
+func (s *Sampler) PedalDown() bool { return s.pedalDown }
 
 // Process renders all active voices into buffer, advancing deltaTime
 // seconds per frame. Each voice is mono; it is mixed in with its region
@@ -1012,7 +1058,28 @@ func (s *Sampler) allocVoice() *Voice {
 func (s *Sampler) startVoice(v *Voice, rg *Region, pitch int, velocity float32, params instruments.NoteParams) {
 	initVoice(v, rg, pitch, velocity, s.sampleRate,
 		s.attack, s.decay, s.sustain, s.release, s.clock, params)
+	v.gate = s.gateLin
 }
+
+// SetNoiseGateDB sets the per-voice noise-gate threshold in dBFS:
+// voice output below the threshold mutes to zero, keeping sample hiss
+// out of quiet tails and pauses. Non-positive values convert once here
+// (10^(dB/20)); zero or positive input disables the gate. Setup-time
+// only; the audio loop reads the precomputed threshold.
+func (s *Sampler) SetNoiseGateDB(db float64) {
+	if !(db < 0) {
+		s.gateLin = 0
+		return
+	}
+	if db < -120 {
+		db = -120
+	}
+	s.gateLin = float32(math.Pow(10, db/20))
+}
+
+// NoiseGateThreshold reports the gate threshold as a linear magnitude;
+// 0 means the gate is disabled.
+func (s *Sampler) NoiseGateThreshold() float32 { return s.gateLin }
 
 // initVoice (re)initializes v for rg without touching the sampler: the
 // shared core behind startVoice and the steal handoff. It clears loop
@@ -1043,6 +1110,7 @@ func initVoice(v *Voice, rg *Region, pitch int, velocity float32, sampleRate, at
 
 	v.Active = true
 	v.releasing = false
+	v.pedalHeld = false // fresh notes start unheld regardless of history
 	v.startTime = startTime
 	v.ReleaseTime = 0
 	v.gain = rg.LinearGain()

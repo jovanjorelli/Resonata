@@ -3,8 +3,8 @@
 Generate a cinematic film score cue as a Resonata JSON score. Output
 **only** the JSON document — no prose, no fences, no comments. Times
 are seconds (`beat × 60 / bpm`); pitches are MIDI (60 = C4). Resonata
-has two instrument types: `ocarina` (procedural, no files) and
-`sampler` (needs an existing SFZ `file`).
+has three instrument types: `ocarina` (procedural, no files), `synth`
+(subtractive, no files), and `sampler` (needs an existing SFZ `file`).
 
 ## Forces
 
@@ -32,7 +32,7 @@ has two instrument types: `ocarina` (procedural, no files) and
 
 - Target duration: 1–4 minutes
 - All pitches 0–127, velocities 0–1, times ≥ 0 and sorted per track
-- Delay `feedback` below 0.98; at most eight tracks with `delay`
+- Delay `feedback` below 0.98; each track with `delay` owns an independent echo.
 - Reprise the cue in another key with `transpose` (global or per-track);
   final pitches must stay 0–127
 - Feel: `timing_offset_ms` +5–10 to linger on resolution tones,

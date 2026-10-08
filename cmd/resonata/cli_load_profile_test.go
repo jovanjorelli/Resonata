@@ -157,7 +157,7 @@ func TestProfileHelpers(t *testing.T) {
 }
 
 func TestVersionPinned(t *testing.T) {
-	if Version != "1.0" {
-		t.Fatalf("Version = %q, want 1.0", Version)
+	if Version != "2" {
+		t.Fatalf("Version = %q, want 2", Version)
 	}
 }

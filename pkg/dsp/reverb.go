@@ -243,6 +243,15 @@ func (r *Reverb) SetParams(p ReverbParams) {
 // Params reports the current configuration.
 func (r *Reverb) Params() ReverbParams { return r.params }
 
+// SetDamping retunes only the HF air-absorption coefficient in place:
+// 0 disables the feedback lowpass (bright tail), larger values darken
+// it up to the 0.95 stability ceiling shared with SetParams. Buffers
+// are untouched, so this never allocates; retuning mid-tail may click,
+// call Reset for a clean restart.
+func (r *Reverb) SetDamping(d float32) {
+	r.params.Damping = ClampF32(d, 0, 0.95)
+}
+
 // RT60Seconds estimates the reverberation time from the loop gain and
 // mean delay length: RT60 ≈ 3·Tloop / −log10(feedback).
 func (r *Reverb) RT60Seconds() float64 {

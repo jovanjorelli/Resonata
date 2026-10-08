@@ -5,13 +5,20 @@ import "math"
 // FilterMode selects the biquad response.
 type FilterMode uint8
 
-// Supported biquad modes.
+// Supported biquad modes, evaluated with RBJ cookbook coefficients in
+// Direct Form I: y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2].
 const (
+	// Lowpass passes frequencies below cutoff and attenuates above.
 	Lowpass FilterMode = iota
+	// Highpass passes frequencies above cutoff and attenuates below.
 	Highpass
+	// Bandpass passes a band around the center frequency set by Q.
 	Bandpass
+	// Peaking boosts or cuts a band around the center by gainDB decibels.
 	Peaking
+	// LowShelf boosts or cuts everything below cutoff by gainDB decibels.
 	LowShelf
+	// HighShelf boosts or cuts everything above cutoff by gainDB decibels.
 	HighShelf
 )
 

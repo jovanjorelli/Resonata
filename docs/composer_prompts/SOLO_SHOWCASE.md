@@ -29,7 +29,7 @@ are seconds (`beat × 60 / bpm`); pitches are MIDI (60 = C4).
 - Target duration: 1–2 minutes
 - Solo range C4–C6 (MIDI 60–84), velocity 0.75–0.95
 - All pitches 0–127, velocities 0–1, times ≥ 0 and sorted per track
-- Delay `feedback` below 0.98; at most two tracks with `delay`
+- Delay `feedback` below 0.98; prefer `delay` on at most two tracks
 - Optional `transpose` (global or per-track) to fit the solo range;
   final pitches must stay 0–127
 - Feel: `accent` 1.2–1.4 on phrase peaks, `timing_offset_ms` +5–8 to

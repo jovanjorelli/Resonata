@@ -19,10 +19,16 @@ import (
 type Format uint16
 
 const (
-	PCM16      Format = 1 // 16-bit little-endian signed integer
-	PCM24      Format = 1 // 24-bit little-endian signed integer
-	PCM32      Format = 1 // 32-bit little-endian signed integer
-	Float32    Format = 3 // 32-bit IEEE float
+	// PCM16 selects 16-bit little-endian signed integer samples.
+	PCM16 Format = 1
+	// PCM24 selects 24-bit little-endian signed integer samples.
+	PCM24 Format = 1
+	// PCM32 selects 32-bit little-endian signed integer samples.
+	PCM32 Format = 1
+	// Float32 selects 32-bit IEEE float samples.
+	Float32 Format = 3
+	// Extensible is the 0xFFFE wrapper carrying speaker positions for
+	// float and multichannel layouts.
 	Extensible Format = 0xFFFE
 )
 

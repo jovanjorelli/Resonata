@@ -3,8 +3,8 @@
 Generate a small chamber piece as a Resonata JSON score. Output
 **only** the JSON document — no prose, no fences, no comments. Times
 are seconds (`beat × 60 / bpm`); pitches are MIDI (60 = C4). Resonata
-has two instrument types: `ocarina` (procedural, no files) and
-`sampler` (needs an existing SFZ `file`).
+has three instrument types: `ocarina` (procedural, no files), `synth`
+(subtractive, no files), and `sampler` (needs an existing SFZ `file`).
 
 ## Ensemble
 
@@ -21,7 +21,7 @@ has two instrument types: `ocarina` (procedural, no files) and
 - Less reverb, more dry signal: `reverb_send` 0.1–0.3
 - Close panning: keep all tracks within -0.4 to 0.4
 - Gentle EQ: high-pass strings at 60–80 Hz to remove rumble
-- At most two tracks with `delay`, `feedback` below 0.6
+- Prefer `delay` on at most two tracks, `feedback` below 0.6
 - Repeated detached figures vary automatically when the SFZ library
   provides round-robin takes — no score changes needed
 

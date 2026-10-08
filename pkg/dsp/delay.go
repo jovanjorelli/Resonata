@@ -28,14 +28,22 @@ const (
 // beat, so delay time is 60/BPM * subdivision seconds.
 type Subdivision float64
 
-// Musical subdivisions for BPM-synced echo times.
+// Musical subdivisions for BPM-synced echo times, in beats where a
+// quarter note is one beat: tap length is 60/BPM * subdivision seconds.
 const (
-	SubdivisionWhole      Subdivision = 4.0
-	SubdivisionHalf       Subdivision = 2.0
-	SubdivisionQuarter    Subdivision = 1.0
-	SubdivisionEighth     Subdivision = 0.5
-	SubdivisionEighthD    Subdivision = 0.75
-	SubdivisionSixteenth  Subdivision = 0.25
+	// SubdivisionWhole is four beats (one bar in 4/4).
+	SubdivisionWhole Subdivision = 4.0
+	// SubdivisionHalf is two beats.
+	SubdivisionHalf Subdivision = 2.0
+	// SubdivisionQuarter is one beat, the default tap length.
+	SubdivisionQuarter Subdivision = 1.0
+	// SubdivisionEighth is half a beat.
+	SubdivisionEighth Subdivision = 0.5
+	// SubdivisionEighthD is a dotted eighth (three quarters of a beat).
+	SubdivisionEighthD Subdivision = 0.75
+	// SubdivisionSixteenth is a quarter beat.
+	SubdivisionSixteenth Subdivision = 0.25
+	// SubdivisionSixteenthT is a triplet sixteenth (one third of a beat).
 	SubdivisionSixteenthT Subdivision = 1.0 / 3.0
 )
 

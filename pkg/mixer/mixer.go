@@ -1,7 +1,17 @@
+// Package mixer sums instrument strips into a stereo master bus: per-track
+// EQ'd signals feed pan/volume strips, independent per-track echoes, and
+// one FDN reverb per acoustic space, finished by the master chain
+// (soft clipper, optional lookahead limiter, optional mono-bass fold).
+// All buses and effect instances are pre-allocated at construction, so the
+// per-block audio loop performs no allocations; mixing itself runs on a
+// single goroutine, with optional parallel per-track voicing that still
+// sums sequentially for deterministic output.
 package mixer
 
 import (
 	"math"
+	"runtime"
+	"sync"
 
 	"resonata/pkg/dsp"
 	"resonata/pkg/instruments"
@@ -9,8 +19,12 @@ import (
 
 // Master-chain defaults.
 const (
+	// DefaultClipThreshold is the soft-clipper knee: magnitudes below it
+	// pass through unchanged, magnitudes above compress toward ±1.
 	DefaultClipThreshold float32 = 0.9
-	DefaultReverbWet     float32 = 0.25
+	// DefaultReverbWet is the master reverb return level applied to every
+	// room's FDN output. Zero bypasses the reverb network entirely.
+	DefaultReverbWet float32 = 0.25
 
 	// maxTrackRooms caps the distinct per-track acoustic spaces beyond
 	// the master reverb. Extra rooms merge into the nearest existing
@@ -20,13 +34,18 @@ const (
 
 // TrackBuffer is one mixer strip: an instrument plus its pre-allocated
 // interleaved stereo bus and mix settings. Tracks with an echo own a
-// dedicated delay instance allocated once at setup time.
+// dedicated delay instance allocated once at setup time. Each strip also
+// owns a render scratch buffer so parallel mode can voice tracks
+// concurrently without sharing state.
 type TrackBuffer struct {
 	instrument instruments.Instrument
 	buffer     []float32 // interleaved stereo, 2·maxBlock samples
-	pan        float32   // -1 (left) to 1 (right)
-	volume     float32   // linear gain, 0 to 1
-	send       float32   // reverb send level, 0 to 1
+	scratchL   []float32 // planar render scratch, maxBlock frames
+	scratchR   []float32 // planar render scratch, maxBlock frames
+	scratch    dsp.StereoBuffer
+	pan        float32 // -1 (left) to 1 (right)
+	volume     float32 // linear gain, 0 to 1
+	send       float32 // reverb send level, 0 to 1
 	delay      *dsp.StereoDelay
 	delayWet   float32 // echo return mix, 0 to 1
 	muted      bool
@@ -37,8 +56,9 @@ type TrackBuffer struct {
 // runs the master chain: per-track reverb sends are summed into one send
 // bus per acoustic space and returned through that space's FDN reverb
 // (pkg/dsp), each track's own echo (when present) adds its wet return
-// straight into the master, and the tanh soft clipper runs last so it
-// also catches the wet returns. Tracks without a room override share the
+// straight into the master, and the soft clipper (tanh saturation, or a
+// linear clamp in bypass mode) catches the wet returns before the
+// optional limiter and mono-bass stages. Tracks without a room override share the
 // master reverb; tracks sharing a room configuration share one instance.
 // All buffers are pre-allocated in New (track buses come from a fixed
 // arena, send buses from a fixed pool sized for every room), so Process
@@ -49,15 +69,23 @@ type Mixer struct {
 	sendPool     []float32 // (maxTrackRooms+1) stereo send buses, room 0 first
 	sampleRate   int
 
-	maxBlock  int               // frames per channel the buffers hold
-	lastN     int               // frames rendered by the last Process
-	pool      []float32         // track-bus arena handed out by AddTrack
-	poolUsed  int               // consumed prefix of pool
-	render    *dsp.StereoBuffer // instrument render scratch, reused per track
-	clipper   SoftClipper
-	reverb    *dsp.Reverb   // master FDN reverb, always reverbs[0]
-	reverbs   []*dsp.Reverb // one FDN per acoustic space, index 0 is master
-	reverbWet float32
+	maxBlock    int               // frames per channel the buffers hold
+	lastN       int               // frames rendered by the last Process
+	pool        []float32         // track arena: per strip one bus plus two scratch planes
+	poolUsed    int               // consumed prefix of pool
+	render      *dsp.StereoBuffer // instrument render scratch, reused per track
+	clipper     SoftClipper
+	limiter     *dsp.Limiter // mastering limiter, allocated once; runs only when enabled
+	useLimiter  bool         // route the master bus through the limiter after the clipper
+	useParallel bool         // voice tracks concurrently; the sum stays sequential
+	parWg       sync.WaitGroup
+	monoBassHz  float32       // mono-bass crossover frequency in Hz; 0 disables
+	monoBassA   float32       // precomputed one-pole coefficient for monoBassHz
+	bassYL      float32       // low-band state, left (persists across blocks)
+	bassYR      float32       // low-band state, right (persists across blocks)
+	reverb      *dsp.Reverb   // master FDN reverb, always reverbs[0]
+	reverbs     []*dsp.Reverb // one FDN per acoustic space, index 0 is master
+	reverbWet   float32
 }
 
 // New creates a mixer at sampleRate Hz, pre-allocating maxTracks strips
@@ -80,9 +108,10 @@ func New(sampleRate, maxTracks, maxBlock int) *Mixer {
 		sendPool:     make([]float32, (maxTrackRooms+1)*2*maxBlock),
 		sampleRate:   sampleRate,
 		maxBlock:     maxBlock,
-		pool:         make([]float32, maxTracks*2*maxBlock),
+		pool:         make([]float32, maxTracks*4*maxBlock),
 		render:       dsp.NewStereoBuffer(maxBlock),
 		clipper:      SoftClipper{threshold: DefaultClipThreshold},
+		limiter:      dsp.NewLimiter(float64(sampleRate)),
 		reverb:       master,
 		reverbs:      []*dsp.Reverb{master},
 		reverbWet:    DefaultReverbWet,
@@ -100,9 +129,16 @@ func (m *Mixer) AddTrack(instrument instruments.Instrument, pan, volume float32)
 	size := 2 * m.maxBlock
 	buf := m.pool[m.poolUsed : m.poolUsed+size]
 	m.poolUsed += size
+	sl := m.pool[m.poolUsed : m.poolUsed+m.maxBlock]
+	m.poolUsed += m.maxBlock
+	sr := m.pool[m.poolUsed : m.poolUsed+m.maxBlock]
+	m.poolUsed += m.maxBlock
 	m.tracks = append(m.tracks, TrackBuffer{
 		instrument: instrument,
 		buffer:     buf,
+		scratchL:   sl,
+		scratchR:   sr,
+		scratch:    dsp.StereoBuffer{Left: sl, Right: sr},
 		pan:        clamp32(pan, -1, 1),
 		volume:     clamp32(volume, 0, 1),
 	})
@@ -265,14 +301,155 @@ func (m *Mixer) SetReverbPreset(name string) bool {
 	return ok
 }
 
+// SetReverbDamping overrides the HF air-absorption coefficient on every
+// reverb instance (master plus per-track rooms) in place: 0 disables the
+// feedback lowpass for a bright tail, larger values darken it up to the
+// 0.95 ceiling. It allocates nothing.
+func (m *Mixer) SetReverbDamping(d float32) {
+	for _, r := range m.reverbs {
+		r.SetDamping(d)
+	}
+}
+
 // SetClipThreshold retunes the master soft clipper.
 func (m *Mixer) SetClipThreshold(t float32) { m.clipper.SetThreshold(t) }
 
 // ClipThreshold reports the soft clipper threshold.
 func (m *Mixer) ClipThreshold() float32 { return m.clipper.Threshold() }
 
+// SetSaturationBypass selects the master clipper mode: false keeps tape
+// saturation (the default), true passes signal linearly with a hard
+// clamp at ±1 and no tanh coloration.
+func (m *Mixer) SetSaturationBypass(bypass bool) { m.clipper.SetClean(bypass) }
+
+// SaturationBypass reports whether the saturation bypass is active.
+func (m *Mixer) SaturationBypass() bool { return m.clipper.Clean() }
+
+// SetLimiterEnabled routes the master bus through the lookahead limiter
+// after the soft clipper when true (default false). The limiter instance
+// is allocated once in New; enabling performs no allocation.
+func (m *Mixer) SetLimiterEnabled(enabled bool) { m.useLimiter = enabled }
+
+// LimiterEnabled reports whether the mastering limiter runs.
+func (m *Mixer) LimiterEnabled() bool { return m.useLimiter }
+
+// SetMonoBassCutoff sets the mono-bass crossover in Hz: content below
+// the cutoff sums to mono ((L+R)/2) while content above stays stereo.
+// Non-positive values disable it. The one-pole coefficient (a =
+// 1−exp(−2π·fc/fs)) derives from the mixer rate here, so the per-block loop only advances two
+// persistent filter states and allocates nothing. A first-order slope
+// was chosen deliberately: steeper filters shift low-band phase more,
+// which would leave a larger un-mono'd residual; the gentle slope
+// maximizes actual mono below the cutoff. Retuning mid-stream may
+// click; set it before rendering.
+func (m *Mixer) SetMonoBassCutoff(hz float32) {
+	if hz <= 0 {
+		m.monoBassHz = 0
+		return
+	}
+	m.monoBassHz = hz
+	a := 1 - math.Exp(-2*math.Pi*float64(hz)/float64(m.sampleRate))
+	if a > 1 {
+		a = 1
+	}
+	m.monoBassA = float32(a)
+}
+
+// MonoBassCutoff reports the crossover frequency in Hz, or 0 when off.
+func (m *Mixer) MonoBassCutoff() float32 { return m.monoBassHz }
+
+// applyMonoBass folds the low band to mono in place. The split is
+// additive (out = monoLow + (dry − low)) so centered bass reconstructs
+// near-exactly with no crossover click; filter states persist across
+// blocks, keeping tails continuous.
+func (m *Mixer) applyMonoBass(master []float32, n int) {
+	a := m.monoBassA
+	yL, yR := m.bassYL, m.bassYR
+	for i := 0; i < n; i++ {
+		l := master[2*i]
+		r := master[2*i+1]
+		yL += a * (l - yL)
+		yR += a * (r - yR)
+		mono := (yL + yR) * 0.5
+		master[2*i] = mono + (l - yL)
+		master[2*i+1] = mono + (r - yR)
+	}
+	m.bassYL, m.bassYR = yL, yR
+}
+
 // Reverb exposes the master FDN reverb for preset/parameter tweaks.
 func (m *Mixer) Reverb() *dsp.Reverb { return m.reverb }
+
+// Parallel track voicing uses one process-wide worker pool so no
+// per-block goroutine or closure is ever allocated and no mixer leaks
+// parked workers: the pool lives as long as the process and carries no
+// audio state. Each job voices exactly one track into that track's own
+// bus and scratch; completion is counted on the owning mixer's
+// WaitGroup. Summing always happens sequentially afterwards in fixed
+// track order, so parallel renders are byte-identical to sequential
+// ones. Callers must give each track its own instrument instance; two
+// tracks sharing one instrument would race on its voice state.
+type parallelJob struct {
+	m     *Mixer
+	track int
+	n     int
+	dt    float64
+}
+
+var (
+	parOnce sync.Once
+	parJobs chan parallelJob
+)
+
+// ensureParallelPool starts the shared voicing workers once: one per
+// logical CPU, bounded so small machines and huge track counts stay
+// sane. The job channel is sized for large batches.
+func ensureParallelPool() {
+	parOnce.Do(func() {
+		nw := runtime.NumCPU()
+		if nw < 1 {
+			nw = 1
+		}
+		if nw > 64 {
+			nw = 64
+		}
+		parJobs = make(chan parallelJob, 4096)
+		for w := 0; w < nw; w++ {
+			go func() {
+				for j := range parJobs {
+					j.m.renderTrack(j.track, j.n, j.dt)
+					j.m.parWg.Done()
+				}
+			}()
+		}
+	})
+}
+
+// renderTrack voices one track's instrument into its own stereo bus.
+// Only independent per-track state is touched (own instrument, own
+// scratch, own bus), so concurrent tracks never share memory. Slice
+// headers are re-cut per block from arena-owned arrays: no allocation.
+func (m *Mixer) renderTrack(i int, n int, dt float64) {
+	tr := &m.tracks[i]
+	tr.scratch.Left = tr.scratchL[:n]
+	tr.scratch.Right = tr.scratchR[:n]
+	clear(tr.scratch.Left)
+	clear(tr.scratch.Right)
+	tr.instrument.Process(&tr.scratch, dt)
+	buf := tr.buffer[:2*n]
+	for j := 0; j < n; j++ {
+		buf[2*j] = tr.scratch.Left[j]
+		buf[2*j+1] = tr.scratch.Right[j]
+	}
+}
+
+// SetParallel enables parallel per-track voicing when true (default
+// false, fully sequential). Set it before rendering. Each track needs
+// its own instrument instance; the engine always provides that.
+func (m *Mixer) SetParallel(enabled bool) { m.useParallel = enabled }
+
+// Parallel reports whether parallel voicing is enabled.
+func (m *Mixer) Parallel() bool { return m.useParallel }
 
 // Process renders blockSize frames of every unmuted track into its bus,
 // sums the buses into the interleaved stereo master plus one reverb send
@@ -296,21 +473,38 @@ func (m *Mixer) Process(blockSize int) {
 		clear(m.roomBus(r, n))
 	}
 
-	// Render each unmuted track and sum it into the buses.
+	// Render each unmuted track and sum it into the buses. In parallel
+	// mode tracks voice concurrently into their own buses first; the
+	// sum below still runs sequentially in fixed track order, which is
+	// what keeps parallel renders byte-identical.
+	if m.useParallel {
+		ensureParallelPool()
+		for i := range m.tracks {
+			if m.tracks[i].muted {
+				continue
+			}
+			m.parWg.Add(1)
+			parJobs <- parallelJob{m: m, track: i, n: n, dt: dt}
+		}
+		m.parWg.Wait()
+	}
 	for i := range m.tracks {
 		tr := &m.tracks[i]
 		if tr.muted {
 			continue
 		}
-		m.render.SetLen(n)
-		m.render.Clear()
-		tr.instrument.Process(m.render, dt)
-		// Interleave the planar render into the track's stereo bus.
-		buf := tr.buffer[:2*n]
-		for j := 0; j < n; j++ {
-			buf[2*j] = m.render.Left[j]
-			buf[2*j+1] = m.render.Right[j]
+		if !m.useParallel {
+			m.render.SetLen(n)
+			m.render.Clear()
+			tr.instrument.Process(m.render, dt)
+			// Interleave the planar render into the track's stereo bus.
+			buf := tr.buffer[:2*n]
+			for j := 0; j < n; j++ {
+				buf[2*j] = m.render.Left[j]
+				buf[2*j+1] = m.render.Right[j]
+			}
 		}
+		buf := tr.buffer[:2*n]
 		m.mixTrack(master, buf, tr.pan, tr.volume)
 		if tr.send > 0 && tr.reverbIdx >= 0 && tr.reverbIdx < len(m.reverbs) {
 			m.mixTrack(m.roomBus(tr.reverbIdx, n), buf, tr.pan, tr.volume*tr.send)
@@ -335,9 +529,20 @@ func (m *Mixer) Process(blockSize int) {
 		}
 	}
 
-	// Master processing: the clipper runs last so it also tames the wet
-	// returns.
+	// Master processing, in order: the clipper tames the wet returns,
+	// then the optional limiter (-0.1 dBFS ceiling), then the optional
+	// mono-bass fold. Each stage after the clipper is skipped unless
+	// enabled, so the default path is unchanged.
 	m.applySoftClipper(n)
+	if m.useLimiter {
+		// The limiter's 5 ms lookahead delays output by 240 frames at
+		// 48 kHz: renders start with buffered silence and end 240
+		// frames early. Length is unchanged; the shift is deterministic.
+		m.limiter.ProcessInterleaved(master)
+	}
+	if m.monoBassHz > 0 {
+		m.applyMonoBass(master, n)
+	}
 }
 
 // mixTrack sums an interleaved stereo track bus into dst, applying
@@ -368,7 +573,8 @@ func (m *Mixer) mixDelay(master []float32, tr *TrackBuffer, buf []float32, n int
 	}
 }
 
-// applySoftClipper runs the master bus through tanh saturation.
+// applySoftClipper runs the master bus through the clipper: tanh
+// saturation by default, or a linear hard clamp at ±1 in bypass mode.
 func (m *Mixer) applySoftClipper(n int) {
 	m.clipper.ProcessSlice(m.masterBuffer[:2*n])
 }

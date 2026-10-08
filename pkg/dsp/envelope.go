@@ -5,12 +5,19 @@ import "math"
 // Stage identifies the current ADSR segment.
 type Stage uint8
 
-// ADSR stages.
+// ADSR stages in lifecycle order: a voice rests in StageIdle, rises
+// through StageAttack, falls through StageDecay, holds StageSustain until
+// note-off, then fades in StageRelease back to StageIdle.
 const (
+	// StageIdle is silence: the envelope outputs zero and advances no state.
 	StageIdle Stage = iota
+	// StageAttack is the linear rise from zero to peak over the attack time.
 	StageAttack
+	// StageDecay is the exponential fall from peak toward the sustain level.
 	StageDecay
+	// StageSustain holds the sustain level until note-off or release.
 	StageSustain
+	// StageRelease is the exponential fade to silence after note-off.
 	StageRelease
 )
 

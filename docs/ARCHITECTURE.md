@@ -18,6 +18,7 @@ frames); breath shifts per track; staccato releases at half length
 | PER-TRACK CHAIN (per instrument voice, then strip)            |
 |  voice: sample/oscillator -> loop crossfade -> vibrato LFO -> |
 |    ADSR envelope -> velocity x expression x crossfade gain    |
+|    -> noise gate (sampler, when enabled)                      |
 |  strip: EQ sculpt -> pan/volume -> delay (own echo instance)  |
 |    -> reverb send into the strip's room bus                   |
 +---------------------------------------------------------------+
@@ -27,7 +28,9 @@ frames); breath shifts per track; staccato releases at half length
 | MASTER MIX BUS                                                |
 |  sum dry + per-track echo returns                             |
 |  per-room FDN reverb returns x master wet                     |
-|  tanh soft clipper                                            |
+|  tanh soft clipper (or linear clamp in clean mode)            |
+|  lookahead limiter, only with --limiter                       |
+|  mono-bass fold, only with --mono-bass                        |
 +---------------------------------------------------------------+
   |
   v
@@ -61,11 +64,20 @@ afterwards.
 
 ## Concurrency model
 
-Single-goroutine offline renderer: no concurrency in the audio path,
-which removes race conditions by construction and keeps the
+Sequential rendering is single-goroutine: no concurrency in the audio
+path, which removes race conditions by construction and keeps the
 zero-allocation guarantee auditable. The CLI adds only a buffered
-progress reporter on stderr. Batch throughput uses process-level
-parallelism.
+progress reporter on stderr. Batch renders files sequentially in one
+process, each file with an isolated engine.
+
+With `--parallel`, track voicing fans out across a shared worker pool
+(one goroutine per logical CPU, started once per process) while the
+master sum still runs sequentially in fixed track order: each track
+voices only its own instrument, scratch buffer, and bus, so concurrent
+tracks never share memory, and the sequential sum keeps parallel renders
+byte-identical to sequential ones. The pool carries no audio state and
+performs no per-block allocation; tracks sharing one instrument instance
+must not use parallel mode. Set the flag before rendering.
 
 ## Score intake pipeline
 
@@ -74,7 +86,8 @@ parallelism.
    every field and collect all violations into one error.
 3. Engine scheduling: breath pauses shift phrase starts per track,
    notes become on/off frame events with per-note payloads
-   (envelope overrides, vibrato, expression).
+   (envelope overrides, vibrato, expression); track `pedal` moves
+   become pedal events applied before note events on shared frames.
 4. Room collection: distinct track spaces merge past eight,
    least-used-first into the nearest survivor; each gets one FDN.
 
@@ -97,7 +110,9 @@ On every sampler note-on, in order:
 ## Sampler voice lifecycle
 
 States: idle -> active (attack/decay/sustain) -> releasing
-(note-off, `off_by`, or cutoff) -> idle. Two fading overlays:
+(note-off, `off_by`, or cutoff) -> idle. A held sustain pedal defers
+the note-off transition: the voice stays active with `pedalHeld` set
+until pedal-up releases it. Two fading overlays:
 
 - Stealing: all 16 voices busy, so the oldest voice fades over 240
   frames (~5 ms) while its pending note waits, then repurposes.
@@ -125,6 +140,16 @@ f = (c / 2pi) * sqrt(S / (V * Leff))
 
 Each `NoteOn` inverts the formula so the cavity resonates at exactly
 the requested MIDI pitch.
+
+## Synth voice
+
+The synth (`pkg/instruments/synth`) is a 16-voice polyphonic
+subtractive voice needing no sample files: two oscillators (saw,
+square, or sine each, with semitone detune on the second) through a
+resonant one-pole lowpass under a per-voice ADSR envelope. With all
+voices busy the oldest sounding voice is stolen immediately.
+Per-note envelope overrides and expression apply; vibrato payloads
+are accepted and ignored.
 
 ## DSP formulas
 
@@ -160,7 +185,13 @@ y = x                                    |x| <= t
 y = sign(x)*(t + (1-t)*tanh((|x|-t)/(1-t)))  |x| > t
 ```
 
-The continuous knee asymptotes to ±1 without hard clipping.
+The continuous knee asymptotes to ±1 without hard clipping. In clean
+mode (`--saturation=clean`) the clipper is bypassed to a linear hard
+clamp at ±1 with no tanh coloration.
+
+Lookahead limiter (-0.1 dBFS ceiling, 5 ms lookahead): the mastered
+output never exceeds the ceiling; the 5 ms delay shifts output later
+by 240 frames at 48 kHz with total length unchanged.
 
 ## Stereo delay math
 
@@ -181,7 +212,9 @@ renders exact dry.
 Per-track EQ sculpts before the mixer, so reverb sends and each
 track's echo carry the equalized sound. The master sums dry strips
 plus per-track echo returns, adds each room's FDN return scaled by
-the master wet level, and finishes with the tanh soft clipper. There
+the master wet level, then runs the soft clipper (tanh, or linear
+clamp in clean mode), the optional lookahead limiter, and the
+optional mono-bass fold, in that order. There
 is no master delay bus and no shared reverb input: rooms keep
 separate send buses.
 

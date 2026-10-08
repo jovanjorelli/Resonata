@@ -13,14 +13,22 @@ import (
 	"resonata/pkg/instruments"
 	"resonata/pkg/instruments/ocarina"
 	"resonata/pkg/instruments/sampler"
+	"resonata/pkg/instruments/synth"
 	"resonata/pkg/mixer"
 	"resonata/pkg/score"
 )
 
-// Defaults for the application transport and renderers.
+// Defaults for the application transport and renderers. Rendering is
+// offline and single-goroutine, so these are plain values rather than
+// synchronized configuration.
 const (
+	// DefaultSampleRate is the render rate in Hz. Only 44100, 48000, and
+	// 96000 are accepted by the output encoder.
 	DefaultSampleRate = 48000
-	DefaultBlockSize  = 1024
+	// DefaultBlockSize is the frames-per-channel processing quantum. All
+	// scratch buffers are sized to it once, so the audio loop that reuses
+	// them performs no allocations.
+	DefaultBlockSize = 1024
 
 	// tailSeconds extends playback past the last note-off so envelopes
 	// and the FDN reverb tail decay inside the render (hall RT60 ~2.3 s).
@@ -32,14 +40,17 @@ const (
 
 // noteEvent fires NoteOn/NoteOff on one track's instrument at a frame.
 // On-events carry the score note's full per-note payload (envelope
-// overrides, vibrato, expression); off-events ignore it.
+// overrides, vibrato, expression); off-events ignore it. Pedal events
+// (isPedal) carry a sustain-pedal move instead and ignore pitch data.
 type noteEvent struct {
-	frame  int
-	track  int
-	pitch  int
-	vel    float32
-	on     bool
-	params instruments.NoteParams
+	frame     int
+	track     int
+	pitch     int
+	vel       float32
+	on        bool
+	params    instruments.NoteParams
+	isPedal   bool // sustain-pedal move; pedalDown applies
+	pedalDown bool // true presses, false releases
 }
 
 // Engine plays a score: one instrument per track, summed through a
@@ -62,7 +73,8 @@ type Engine struct {
 }
 
 // New builds the engine for a validated score at sampleRate Hz. Each
-// track gets its instrument: "ocarina" (physical model) or "sampler"
+// track gets its instrument: "ocarina" (physical model), "synth"
+// (subtractive synthesizer), or "sampler"
 // (SFZ file resolved relative to the working directory). Every note is
 // scheduled as frame-accurate on/off events; staccato articulation
 // releases at half the written duration, others hold the full length.
@@ -131,10 +143,17 @@ func New(s *score.Score, sampleRate float64, blockSize int) (*Engine, error) {
 				noteEvent{frame: on, track: i, pitch: n.Pitch, vel: n.Velocity, on: true, params: paramsFor(n, &s.Tracks[i])},
 				noteEvent{frame: off, track: i, pitch: n.Pitch, on: false})
 		}
+		for _, pd := range s.Tracks[i].Pedal {
+			e.events = append(e.events,
+				noteEvent{frame: int(math.Round(pd.Time * sampleRate)), track: i, isPedal: true, pedalDown: pd.Down})
+		}
 	}
 	sort.SliceStable(e.events, func(a, b int) bool {
 		if e.events[a].frame != e.events[b].frame {
 			return e.events[a].frame < e.events[b].frame
+		}
+		if e.events[a].isPedal != e.events[b].isPedal {
+			return e.events[a].isPedal // pedal moves apply before note events
 		}
 		return !e.events[a].on && e.events[b].on // note-offs first on shared frames
 	})
@@ -150,6 +169,10 @@ func newInstrument(def score.InstrumentDef, sampleRate float64) (instruments.Ins
 		o := ocarina.New(sampleRate)
 		o.SetParameters(def.Parameters)
 		return o, nil
+	case "synth":
+		sy := synth.New(sampleRate)
+		sy.SetParameters(def.Parameters)
+		return sy, nil
 	case "sampler":
 		if strings.TrimSpace(def.File) == "" {
 			return nil, fmt.Errorf("sampler instrument needs a file path")
@@ -161,7 +184,7 @@ func newInstrument(def score.InstrumentDef, sampleRate float64) (instruments.Ins
 		sm.SetParameters(def.Parameters)
 		return sm, nil
 	}
-	return nil, fmt.Errorf("unknown instrument type %q (want ocarina or sampler)", def.Type)
+	return nil, fmt.Errorf("unknown instrument type %q (want ocarina, synth, or sampler)", def.Type)
 }
 
 // trackHasEQ reports whether the score track requests any EQ stage.
@@ -278,14 +301,22 @@ type eqInstrument struct {
 	eqR   *dsp.EQ
 }
 
+// Process renders the wrapped voice and sculpts both channels with the
+// track EQ before the mixer sees them, so reverb sends and the track's
+// echo carry the equalized sound. It reuses constructor-owned biquad
+// state and allocates nothing.
 func (e *eqInstrument) Process(buffer *dsp.Buffer, deltaTime float64) {
 	e.inner.Process(buffer, deltaTime)
 	e.eqL.ProcessInPlace(buffer.Left)
 	e.eqR.ProcessInPlace(buffer.Right)
 }
 
+// NoteOn starts a note at the given MIDI pitch (60 = C4) with velocity
+// in [0, 1], forwarded to the wrapped instrument.
 func (e *eqInstrument) NoteOn(pitch int, velocity float32) { e.inner.NoteOn(pitch, velocity) }
-func (e *eqInstrument) NoteOff(pitch int)                  { e.inner.NoteOff(pitch) }
+
+// NoteOff releases the sounding note at the given MIDI pitch.
+func (e *eqInstrument) NoteOff(pitch int) { e.inner.NoteOff(pitch) }
 
 // NoteOnParams forwards the full per-note payload to the wrapped
 // instrument when it accepts it, falling back to a plain NoteOn.
@@ -306,8 +337,28 @@ func (e *eqInstrument) NoteOnEx(pitch int, velocity float32, env instruments.Env
 	}
 	e.inner.NoteOn(pitch, velocity)
 }
+
+// SetParameters applies named instrument parameters; unknown keys are
+// ignored by the wrapped instrument.
 func (e *eqInstrument) SetParameters(params map[string]float32) {
 	e.inner.SetParameters(params)
+}
+
+// SetPedal forwards sustain-pedal moves to the wrapped instrument when
+// it accepts them; other voices ignore the pedal.
+func (e *eqInstrument) SetPedal(down bool) {
+	if p, ok := e.inner.(interface{ SetPedal(bool) }); ok {
+		p.SetPedal(down)
+	}
+}
+
+// setPedal applies a sustain-pedal move to instruments that accept it
+// (the sampler, directly or EQ-wrapped); other voices ignore it.
+// Allocation-free: one type assertion, no heap use.
+func setPedal(inst instruments.Instrument, down bool) {
+	if p, ok := inst.(interface{ SetPedal(bool) }); ok {
+		p.SetPedal(down)
+	}
 }
 
 // Score returns the loaded score.
@@ -321,6 +372,23 @@ func (e *Engine) BlockSize() int { return e.blockSize }
 
 // Mixer exposes the mix graph for wet/tune adjustments.
 func (e *Engine) Mixer() *mixer.Mixer { return e.mix }
+
+// SetNoiseGateDB sets the per-voice noise-gate threshold in dBFS on every
+// sampler instrument: voice output below the threshold mutes to zero.
+// Non-sampler voices are unaffected. Setup-time only; the threshold is
+// precomputed once, so the audio loop stays allocation-free.
+func (e *Engine) SetNoiseGateDB(db float64) {
+	for _, inst := range e.insts {
+		if s, ok := inst.(*sampler.Sampler); ok {
+			s.SetNoiseGateDB(db)
+		}
+		if eq, ok := inst.(*eqInstrument); ok {
+			if s, ok := eq.inner.(*sampler.Sampler); ok {
+				s.SetNoiseGateDB(db)
+			}
+		}
+	}
+}
 
 // Duration is the full play length in seconds, tail included.
 func (e *Engine) Duration() float64 { return float64(e.totalFrames) / e.sampleRate }
@@ -368,7 +436,9 @@ func (e *Engine) ProcessFrames(n int, sink func(master []float32)) {
 		// Fire every event due at the current playhead.
 		for e.nextEvent < len(e.events) && e.events[e.nextEvent].frame <= e.frame {
 			ev := e.events[e.nextEvent]
-			if ev.on {
+			if ev.isPedal {
+				setPedal(e.insts[ev.track], ev.pedalDown)
+			} else if ev.on {
 				if ex, ok := e.insts[ev.track].(instruments.ParamsVoicer); ok {
 					ex.NoteOnParams(ev.pitch, ev.vel, ev.params)
 				} else {

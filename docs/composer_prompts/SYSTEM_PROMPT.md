@@ -20,7 +20,7 @@ score document — no prose, no markdown fences, no comments.
       "id": "unique_string (required)",
       "name": "Display Name",
       "instrument": {
-        "type": "ocarina | sampler (required)",
+        "type": "ocarina | synth | sampler (required)",
         "file": "path/to.sfz (required for sampler)",
         "parameters": {
           "breath_noise": 0.3,
@@ -85,9 +85,10 @@ score document — no prose, no markdown fences, no comments.
   `metadata.swing`: [0, 1], default 0.0. `metadata.breath`:
   finite milliseconds >= 0, default 0.0.
 - `id`: unique, non-empty. At least one track required.
-- `instrument.type`: exactly `ocarina` or `sampler`. Ocarina is a
-  procedural reference voice (no files needed); sampler needs an SFZ
-  `file` that exists. Map orchestral sections onto these two types:
+- `instrument.type`: exactly `ocarina`, `synth`, or `sampler`. Ocarina is a
+  procedural reference voice (no files needed); synth is a two-oscillator
+  subtractive voice (no files needed); sampler needs an SFZ
+  `file` that exists. Map orchestral sections onto these types:
   sustained strings/brass → `ocarina` with low `brightness` (0.3–0.5)
   and slow `vibrato_rate` (3–4.5); winds and soloists → `ocarina` with
   higher `brightness` (0.7–0.9); piano/percussion → `sampler`.
@@ -98,8 +99,8 @@ score document — no prose, no markdown fences, no comments.
   Off-beat eighths shift later by `swing * beat / 3`.
 - `breath` (per-track): finite ms >= 0; non-zero overrides the
   global value. Pauses land between differing non-zero phrases.
-- `room` (per-track): `cathedral`, `hall`, `room`, `none`, or
-  `{size, damping, width}` in [0, 1]; absent uses the master reverb.
+- `room` (per-track): `cathedral`, `hall`, `chapel`, `room`, `plate`,
+  `none`, or `{size, damping, width}` in [0, 1]; absent uses the master reverb.
 - `vibrato` (track or note): `{rate}` 3.0–8.0 Hz, `{depth}`
   0.01–0.15 semitones; absent means straight tone; note overrides
   track. Sustained lines only.
@@ -121,8 +122,8 @@ score document — no prose, no markdown fences, no comments.
   (overrides subdivision). `delay.feedback`: 0–0.98.
   `delay.damping_hz`: 0–100000 (0 = 4000 Hz default). `delay.wet`:
   0–1. `send` is deprecated — omit it.
-- Each track with `delay` gets an independent echo. Keep delays on at
-  most eight tracks.
+- Each track with `delay` gets an independent echo; prefer few delays
+  per score.
 - Round-robin is automatic: when a sampler SFZ library provides
   multiple takes per note (`seq_length`/`seq_position`), the engine
   cycles them on repeats — no score fields needed. The same holds for
@@ -140,7 +141,6 @@ Verify every item before outputting:
 - [ ] All times non-negative and sorted within each track
 - [ ] All sampler `file` paths exist
 - [ ] All delay `feedback` values below 0.98
-- [ ] No more than eight tracks carry `delay`
 - [ ] Track `id` values unique; `title` non-empty; `bpm` in (0, 1000]
 
 ## Complete example

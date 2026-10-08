@@ -2,14 +2,18 @@ package dsp
 
 import "math"
 
-// Mastering limiter defaults.
+// Mastering limiter defaults, all in decibels except where noted.
 const (
 	// DefaultLookahead is the detector-to-output delay: 5 ms, i.e. 240
 	// frames at 48 kHz (ring capacity padded to 256 for mask wrapping).
 	DefaultLookahead = 0.005
 
+	// DefaultLimiterThresholdDB is the knee center in dBFS: gain
+	// reduction engages around −6 dBFS over the soft-knee width below.
 	DefaultLimiterThresholdDB = -6.0
-	DefaultLimiterKneeDB      = 6.0
+	// DefaultLimiterKneeDB is the soft-knee width in dB over which
+	// limiting ramps from transparent to full gain riding.
+	DefaultLimiterKneeDB = 6.0
 
 	// DefaultCeiling is -0.1 dBFS (≈0.9886) rounded down so output
 	// strictly never exceeds 0.988.

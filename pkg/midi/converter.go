@@ -165,6 +165,7 @@ func ToScore(f *File) (*score.Score, error) {
 				})
 			}
 			sort.SliceStable(st.Notes, func(i, j int) bool { return st.Notes[i].Time < st.Notes[j].Time })
+			st.Pedal = pedalMoves(tr, ch, segs)
 			out.Tracks = append(out.Tracks, st)
 		}
 	}
@@ -193,6 +194,25 @@ func channelState(tr []Event) (program map[int]int, cc7 map[int]int, cc10 map[in
 		}
 	}
 	return
+}
+
+// pedalMoves converts sustain-pedal control changes (CC64) on one
+// channel into score pedal events in time order: value >= 64 presses,
+// below releases. Times use the tempo map, matching note timing.
+// Channels without CC64 yield nil, keeping the track pedal-free.
+func pedalMoves(tr []Event, ch int, segs []timeSeg) []score.PedalEvent {
+	var out []score.PedalEvent
+	for _, e := range tr {
+		if e.Type != EventControlChange || e.Data1 != 64 || e.Channel != ch {
+			continue
+		}
+		out = append(out, score.PedalEvent{
+			Time: tickTime(segs, e.Tick),
+			Down: e.Data2 >= 64,
+		})
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Time < out[j].Time })
+	return out
 }
 
 // familyVoicing approximates a General MIDI family on the ocarina model

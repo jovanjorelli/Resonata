@@ -40,7 +40,44 @@ everything after it later; transitions touching phrase 0 take no pause.
 | `reverb_send` | number | 0.0 | [0, 1] | Send level into the track's room |
 | `eq` | object | absent | see below | Parametric sculpt applied before sends |
 | `delay` | object | absent | see below | Independent per-track echo |
+| `pedal` | array | absent | `[{time, down}]` | Sustain-pedal (CC64) moves; absent means never pressed |
 | `notes` | array | empty allowed | note events | The part itself; at least one track required per score |
+
+While the pedal is held (`down: true`, CC64 value >= 64), note-offs
+defer voice release so notes ring naturally; releasing it (`down:
+false`) stops every held voice. Moves apply in time order per track;
+scores without `pedal` render exactly as before.
+
+## Sustain Pedal
+
+The track-level `pedal` array holds sustain-pedal (CC64) moves. While
+the pedal is held, released notes keep ringing naturally like a real
+piano, harp, or string section instead of decaying by their written
+duration; releasing the pedal stops every pending-release voice at
+once. Each move is `{"time": seconds >= 0, "down": true|false}` and
+moves apply in time order per track. Ocarina and synth voices ignore
+pedal moves; only the sampler holds voices.
+
+```json
+{
+  "metadata": {"title": "Pedaled", "bpm": 120, "time_signature": "4/4"},
+  "tracks": [
+    {
+      "id": "keys",
+      "instrument": {"type": "sampler", "file": "samples/piano.sfz"},
+      "volume": 0.9,
+      "pedal": [{"time": 0.0, "down": true}, {"time": 2.0, "down": false}],
+      "notes": [{"time": 0.0, "duration": 0.2, "pitch": 60, "velocity": 0.9}]
+    }
+  ]
+}
+```
+
+The 0.2 s note above rings the sample's full length instead of cutting
+off about 0.1 s after note-off; the pedal release at 2.0 s stops any
+voice still ringing then (here the non-looping sample already ends at
+0.5 s, which always bounds a held note). Without the `pedal` array the
+same render goes quiet about 0.1 s after note-off instead.
 
 ## Note event fields
 
@@ -64,13 +101,17 @@ everything after it later; transitions touching phrase 0 take no pause.
 
 | Field | Type | Default | Range | Description |
 |-------|------|---------|-------|-------------|
-| `type` | string | required | `ocarina` or `sampler` | Sound source |
+| `type` | string | required | `ocarina`, `synth`, or `sampler` | Sound source |
 | `file` | string | required for sampler | SFZ path | Sample library location |
 | `parameters` | map | absent | documented keys | Instrument knobs; unknown keys ignored |
 
 Ocarina parameters: `breath_noise` 0.0-1.0, `vibrato_rate` 1-10 Hz,
 `vibrato_depth` 0-0.1, `brightness` 0.0-1.0. Sampler parameters:
 `master_volume` 0.0-1.0, `attack` 0.0005-2 s, `release` 0.005-10 s.
+Synth parameters: `waveform1`, `waveform2` 0/1/2 (saw/square/sine),
+`cutoff` 20-20000 Hz, `resonance` 0.0-1.0, `attack` 0.0005-2 s,
+`decay` 0.001-2 s, `sustain` 0.0-1.0, `release` 0.005-10 s,
+`detune` -12-12 semitones between oscillators.
 
 ## Delay fields
 
@@ -102,8 +143,8 @@ Chain order: high-pass, low shelf, mid peak, high shelf.
 
 ## Room fields
 
-A track `room` is a preset-name string (`cathedral`, `hall`, `room`,
-`none`) or an object with `size`, `damping`, `width` each in
+A track `room` is a preset-name string (`cathedral`, `hall`, `chapel`,
+`room`, `plate`, `none`) or an object with `size`, `damping`, `width` each in
 [0, 1]. `none` renders the track dry. Tracks sharing one
 configuration share one reverb instance; past eight distinct spaces
 the least-used merge into their nearest neighbor.

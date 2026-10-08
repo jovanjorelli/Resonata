@@ -59,13 +59,14 @@ virtual orchestra. Output **only** a valid JSON score document matching
 - `pan` in [-1, 1]; `volume`, `velocity`, `reverb_send` in [0, 1].
 - Articulations: exactly `staccato`, `legato`, `tenuto`. Staccato
   sounds at half the written duration.
-- Instrument `type` is exactly `ocarina` (procedural reference voice)
+- Instrument `type` is exactly `ocarina` (procedural reference voice),
+  `synth` (subtractive voice, no files needed),
   or `sampler` (requires an existing SFZ `file`).
-- Delay `feedback` below 0.98; at most eight tracks with `delay`.
+- Delay `feedback` below 0.98; each track with `delay` owns an independent echo.
 - EQ: `freq` in (0, 100000), `gain` in [-36, 36], `q` in [0, 50].
 - `swing` in [0, 1]; `breath` finite milliseconds >= 0.
-- `room` is `cathedral`, `hall`, `room`, `none`, or a
-  `{size, damping, width}` object in [0, 1].
+- `room` is `cathedral`, `hall`, `chapel`, `room`, `plate`, `none`,
+  or a `{size, damping, width}` object in [0, 1].
 - `attack` / `decay` / `release` of 0 (or omitted) keep SFZ defaults.
 
 ## Composition guidelines
@@ -84,7 +85,8 @@ Delay: every track owns a fully independent echo (no shared bus).
 `mode` `stereo`/`pingpong`; `subdivision` `1/4`, `1/8`, `1/8d`,
 `1/16`, `1/16t` synced to BPM; `feedback` below 0.9 for control;
 `damping_hz` low for tape warmth; `wet` 0.0 is exact dry; `send` is
-deprecated. Keep delays on at most five to eight tracks.
+deprecated. Prefer delays on a handful of tracks; each one adds an
+independent echo instance.
 
 EQ: high-pass plus three bands per track (all-zero bands off, `q: 0`
 selects defaults). HPF 60–100 Hz clears rumble; mid cut 200–400 Hz

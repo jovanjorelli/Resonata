@@ -11,12 +11,18 @@ import (
 // KnownArticulations lists the articulation types accepted by Validate.
 var KnownArticulations = []string{"staccato", "legato", "tenuto"}
 
-// Range limits enforced by Validate.
+// Range limits enforced by Validate. Pitch bounds are inclusive MIDI
+// note numbers; BPM is exclusive at the bottom (a positive tempo is
+// required) and inclusive at the top.
 const (
+	// MinMIDIPitch is the lowest valid MIDI note number.
 	MinMIDIPitch = 0
+	// MaxMIDIPitch is the highest valid MIDI note number.
 	MaxMIDIPitch = 127
-	MinBPM       = 0    // exclusive
-	MaxBPM       = 1000 // inclusive
+	// MinBPM is the exclusive lower tempo bound in BPM.
+	MinBPM = 0
+	// MaxBPM is the inclusive upper tempo bound in BPM.
+	MaxBPM = 1000
 )
 
 // Validate checks required fields and value ranges across the whole
@@ -113,6 +119,12 @@ func validateTrack(t *Track, index int, globalTranspose int, seen map[string]int
 	errs = append(errs, validateRoom(t.Room, label)...)
 	errs = append(errs, validateEQ(t.EQ, label)...)
 	errs = append(errs, validateDelay(t.Delay, label)...)
+	for j := range t.Pedal {
+		p := t.Pedal[j]
+		if math.IsNaN(p.Time) || math.IsInf(p.Time, 0) || p.Time < 0 {
+			errs = append(errs, fmt.Errorf("%s: pedal[%d].time must be finite seconds >= 0, got %g", label, j, p.Time))
+		}
+	}
 
 	for j := range t.Notes {
 		if err := checkTransposedPitch(&t.Notes[j], t, globalTranspose, index, j); err != nil {
@@ -268,7 +280,7 @@ func validateRoom(r *Room, label string) []error {
 	}
 	if r.IsPreset {
 		if !IsRoomPreset(r.Preset) {
-			return []error{fmt.Errorf("%s: room must be \"cathedral\", \"hall\", \"room\", or \"none\", got %q", label, r.Preset)}
+			return []error{fmt.Errorf("%s: room must be \"cathedral\", \"hall\", \"chapel\", \"room\", \"plate\", or \"none\", got %q", label, r.Preset)}
 		}
 		return nil
 	}

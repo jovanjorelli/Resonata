@@ -104,11 +104,10 @@ use, so prefer one SFZ per instrument.
 ## Building from source
 
 Prerequisites: Go 1.27 or later, no system libraries. The project
-does not use Git in its workflow (see README Notes); storage is
-handled externally, so start from the provided source folder:
+does not use Git in its workflow (see the note in [README Overview](../README.md#overview));
+storage is handled externally, so start from the provided source folder:
 
 ```bash
-cd resonata
 CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/resonata ./cmd/resonata
 ./bin/resonata --version
 ```
@@ -119,7 +118,9 @@ Tests and linters:
 go vet ./...
 go test ./...
 gofmt -l pkg/ cmd/
-go test -run=FuzzSFZParse ./pkg/instruments/sampler/
+go test -run='FuzzSFZParse|FuzzScoreJSON|FuzzScoreYAML' ./pkg/instruments/sampler/ ./pkg/score/
+go test -run='FuzzMIDI' ./pkg/midi/
+go test -run='FuzzWAV' ./pkg/wav/
 # Nightly soak (600 s default): ./scripts/soak_fuzz.sh 600 (seeds: pkg/instruments/sampler/testdata/fuzz/FuzzSFZParse/)
 ```
 

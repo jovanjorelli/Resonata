@@ -1,4 +1,4 @@
-# CLI Reference — Resonata v1.0
+# CLI Reference — Resonata v2
 
 Complete reference for the `resonata` headless renderer. For engine
 internals, see [Architecture](./ARCHITECTURE.md); for scores, see
@@ -27,7 +27,7 @@ CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/resonata ./cmd/resonata
 | `--bit-depth` | none | string | `24` | Output encoding: `16`, `24`, `32` (integer PCM) or `32f` (32-bit IEEE float) |
 | `--channels` | none | int | `2` | Output channels: `1` (mono, stereo downmixed) or `2` (stereo) |
 | `--verbose` | `-v` | bool | false | Verbose logging |
-| `--version` | none | bool | false | Print `Resonata v1.0` and exit |
+| `--version` | none | bool | false | Print `Resonata v2` and exit |
 
 ## MIDI interoperability
 
@@ -46,6 +46,12 @@ CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/resonata ./cmd/resonata
 | `--humanize` | 0.0-1.0 | 0.0 | Micro-timing and velocity humanization strength, deterministic seed 1 |
 | `--reverb` | preset | `hall` | Reverb space: `cathedral`, `hall`, `chapel`, `room`, `plate`, or `none` (bypass) |
 | `--master-gain` | 0.0-1.0 | 1.0 | Master output gain multiplier applied before WAV encoding |
+| `--saturation` | `tape`, `clean` | `tape` | Analog soft clip (`tape`) or linear clamp at ±1 (`clean`); unknown values error |
+| `--reverb-damping` | 0.0-1.0 | -1 (preset) | `-1` keeps preset damping; `0.0`–`1.0` overrides HF absorption (0 bright, 1 max cutoff); else errors |
+| `--noise-gate` | dBFS | 0 (off) | `0` disables; negative values mute sub-threshold voice output; positive/NaN rejected |
+| `--limiter` | bool | false | Master bus through the lookahead limiter (−0.1 dBFS ceiling) after the soft clipper |
+| `--mono-bass` | `off` or Hz | `off` | `off` disables; integer Hz folds bass below cutoff to mono; else errors |
+| `--parallel` | bool | false | Concurrent per-track voicing with sequential deterministic sum (byte-identical output) |
 
 ## SFZ library flags
 
@@ -75,7 +81,7 @@ input base name; otherwise each WAV lands next to its input file.
 Basic render:
 
 ```bash
-./bin/resonata -s score.json -o output.wav
+./bin/resonata -s examples/simple_score.json -o output.wav
 ```
 
 Humanized render with reverb:
@@ -92,10 +98,10 @@ Humanized render with reverb:
 Output format matrix:
 
 ```bash
-./bin/resonata -s score.json -o out16.wav --bit-depth=16 --channels=1 --sample-rate=44100
-./bin/resonata -s score.json -o out24.wav --bit-depth=24
-./bin/resonata -s score.json -o out32.wav --bit-depth=32 --sample-rate=96000
-./bin/resonata -s score.json -o outf.wav --bit-depth=32f --channels=2
+./bin/resonata -s examples/simple_score.json -o out16.wav --bit-depth=16 --channels=1 --sample-rate=44100
+./bin/resonata -s examples/simple_score.json -o out24.wav --bit-depth=24
+./bin/resonata -s examples/simple_score.json -o out32.wav --bit-depth=32 --sample-rate=96000
+./bin/resonata -s examples/simple_score.json -o outf.wav --bit-depth=32f --channels=2
 ```
 
 Integer PCM writes the standard 16-byte `fmt` chunk; 32-bit float and
