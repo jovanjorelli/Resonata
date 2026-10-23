@@ -76,10 +76,7 @@ func maxStep(out []float32, from int) float32 {
 	return m
 }
 
-// TestLoopCrossfadeClick renders a sustained looped note over many loop
-// cycles with loop points cut mid-cycle (a hard wrap would jump by ~100%
-// of peak) and asserts the seam stays continuous below 5% of peak, both
-// globally and in a window around every loop boundary.
+// TestLoopCrossfadeClick verifies equal-power loop seam crossfade eliminates discontinuous transient clicks.
 func TestLoopCrossfadeClick(t *testing.T) {
 	const loopStart, loopEnd = 0, 4910 // 110 Hz sine: sample 4909 is near +peak, sample 0 is zero
 	s := loopTestSampler(t, 110, 8000, loopStart, loopEnd)
@@ -123,9 +120,7 @@ func TestLoopCrossfadeClick(t *testing.T) {
 	}
 }
 
-// TestLoopShortFallback renders a loop shorter than the 384-frame
-// crossfade and asserts the voice silently falls back to a hard wrap
-// with valid sustained output and never enters the crossfade state.
+// TestLoopShortFallback verifies loop crossfading falls back gracefully when loop duration is shorter than window.
 func TestLoopShortFallback(t *testing.T) {
 	s := loopTestSampler(t, 220, testRate, 1000, 1100) // 100-frame loop
 	s.NoteOn(69, 0.9)
@@ -160,10 +155,7 @@ func fillSustain(t *testing.T, s *Sampler) {
 	}
 }
 
-// TestVoiceStealFade steals the oldest voice and asserts the handoff is
-// seamless: the old note fades to zero over 240 frames, consecutive
-// steps stay below the click threshold, and the pending note then sounds
-// with the new pitch.
+// TestVoiceStealFade verifies stolen voices execute rapid attenuation fade without click artifacts.
 func TestVoiceStealFade(t *testing.T) {
 	s, _ := newTestSampler(t)
 	fillSustain(t, s)
@@ -229,9 +221,7 @@ func TestVoiceStealFade(t *testing.T) {
 	}
 }
 
-// TestDenseStealStress triggers 64 fast sixteenth notes without
-// note-offs so stealing engages on every note past the 16th, then
-// asserts the full mix stays finite with no hard-cut jumps.
+// TestDenseStealStress proves heavy voice stealing stress produces clean continuous audio without NaN or Inf.
 func TestDenseStealStress(t *testing.T) {
 	s, _ := newTestSampler(t)
 	const interval = 0.05 // sixteenth at a driving tempo
@@ -267,9 +257,7 @@ func TestDenseStealStress(t *testing.T) {
 	}
 }
 
-// TestArtifactZeroAlloc benchmarks the note-on steal path, the voice
-// render path with an engaged loop crossfade, and the steal fade, and
-// asserts zero heap allocations throughout.
+// TestArtifactZeroAlloc proves voice stealing and loop crossfading perform zero heap allocations in hot path.
 func TestArtifactZeroAlloc(t *testing.T) {
 	// Note-on while stealing: every trigger reuses a sounding voice.
 	s, _ := newTestSampler(t)

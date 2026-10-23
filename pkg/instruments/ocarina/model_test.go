@@ -11,6 +11,7 @@ import (
 // Compile-time interface check (also present in model.go).
 var _ instruments.Instrument = (*Ocarina)(nil)
 
+// TestHelmholtzFrequency verifies the acoustic cavity resonance frequency formula against theoretical values.
 func TestHelmholtzFrequency(t *testing.T) {
 	// f = (c/2π)·√(S/(V·L)) for S=1e-4 m², V=2.5e-4 m³, L=0.015 m.
 	want := 343.0 / (2 * math.Pi) * math.Sqrt(1e-4/(2.5e-4*0.015))
@@ -28,6 +29,7 @@ func TestHelmholtzFrequency(t *testing.T) {
 	}
 }
 
+// TestNoteOnTunesHelmholtz verifies MIDI note-on calculates correct opening area to tune the Helmholtz resonator.
 func TestNoteOnTunesHelmholtz(t *testing.T) {
 	o := New(48000)
 	if o.Note() != -1 {
@@ -50,6 +52,7 @@ func TestNoteOnTunesHelmholtz(t *testing.T) {
 	}
 }
 
+// TestProcessSilenceAndSignal verifies an idle ocarina produces silence and active note produces output signal.
 func TestProcessSilenceAndSignal(t *testing.T) {
 	o := New(48000)
 	buf := dsp.NewStereoBuffer(512)
@@ -119,6 +122,7 @@ func TestProcessSilenceAndSignal(t *testing.T) {
 	}
 }
 
+// TestEnvelopeShape verifies the 50 ms linear attack and 100 ms exponential release envelope stages.
 func TestEnvelopeShape(t *testing.T) {
 	o := New(48000)
 	o.SetParameters(map[string]float32{"breath_noise": 0, "brightness": 0, "vibrato_depth": 0})
@@ -173,6 +177,7 @@ func TestEnvelopeShape(t *testing.T) {
 	}
 }
 
+// TestVibratoModulatesPitch verifies vibrato LFO frequency modulation across fundamental cycles.
 func TestVibratoModulatesPitch(t *testing.T) {
 	// Measure the longest/shortest fundamental period ratio from
 	// interpolated rising zero crossings of a pure tone.
@@ -222,6 +227,7 @@ func TestVibratoModulatesPitch(t *testing.T) {
 	}
 }
 
+// TestHarmonicBalance verifies 2nd harmonic (-12 dB) and 3rd harmonic (-18 dB) ratios relative to fundamental.
 func TestHarmonicBalance(t *testing.T) {
 	o := New(48000)
 	o.SetParameters(map[string]float32{"breath_noise": 0, "vibrato_depth": 0})
@@ -257,6 +263,7 @@ func TestHarmonicBalance(t *testing.T) {
 	}
 }
 
+// TestBreathNoiseScales verifies turbulent air noise component scales with breath noise and note velocity.
 func TestBreathNoiseScales(t *testing.T) {
 	// High-frequency energy (first-difference RMS) of a pure 440 Hz tone
 	// grows with the breath_noise parameter and with velocity.
@@ -291,6 +298,7 @@ func TestBreathNoiseScales(t *testing.T) {
 	}
 }
 
+// TestSetParametersClamp verifies parameter clamping to valid physical ranges and default preservation.
 func TestSetParametersClamp(t *testing.T) {
 	o := New(48000)
 	if o.BreathNoise() != 0.3 || o.VibratoRate() != 5.0 ||
@@ -315,6 +323,7 @@ func TestSetParametersClamp(t *testing.T) {
 	}
 }
 
+// TestProcessZeroAlloc verifies steady-state audio rendering produces zero heap allocations.
 func TestProcessZeroAlloc(t *testing.T) {
 	o := New(48000)
 	o.NoteOn(69, 0.8)

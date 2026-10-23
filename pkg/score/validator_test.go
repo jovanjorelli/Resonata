@@ -22,18 +22,21 @@ func baseScore() *Score {
 	}
 }
 
+// TestValidateOK verifies a structurally correct score passes validation without errors.
 func TestValidateOK(t *testing.T) {
 	if err := Validate(baseScore()); err != nil {
 		t.Fatalf("valid score rejected: %v", err)
 	}
 }
 
+// TestValidateNil verifies validating a nil score pointer returns an immediate error.
 func TestValidateNil(t *testing.T) {
 	if err := Validate(nil); err == nil {
 		t.Fatal("want error for nil score")
 	}
 }
 
+// TestValidateRejects verifies validation catches missing titles, invalid BPM, and empty tracks.
 func TestValidateRejects(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -99,7 +102,7 @@ func TestValidateRejects(t *testing.T) {
 	}
 }
 
-// TestValidateBoundaries checks that valid edge values are accepted.
+// TestValidateBoundaries verifies score boundary values at valid limits pass validation.
 func TestValidateBoundaries(t *testing.T) {
 	s := baseScore()
 	s.Tracks[0].Pan = -1
@@ -128,8 +131,7 @@ func TestValidateBoundaries(t *testing.T) {
 	}
 }
 
-// TestValidateArticulations checks every known articulation type and the
-// empty (unset) case.
+// TestValidateArticulations verifies accepted articulation names (staccato, legato, tenuto).
 func TestValidateArticulations(t *testing.T) {
 	for _, kind := range append([]string{""}, KnownArticulations...) {
 		s := baseScore()
@@ -140,7 +142,7 @@ func TestValidateArticulations(t *testing.T) {
 	}
 }
 
-// TestValidateSamplerWithFile checks the sampler/file pairing passes.
+// TestValidateSamplerWithFile verifies sampler instrument requires and validates sample file path.
 func TestValidateSamplerWithFile(t *testing.T) {
 	s := baseScore()
 	s.Tracks[0].Instrument = InstrumentDef{Type: "sampler", File: "piano.sfz"}
@@ -149,8 +151,7 @@ func TestValidateSamplerWithFile(t *testing.T) {
 	}
 }
 
-// TestValidateReportsAllIssues checks that violations are joined, not
-// short-circuited.
+// TestValidateReportsAllIssues verifies validation joins and reports all discovered score defects.
 func TestValidateReportsAllIssues(t *testing.T) {
 	s := baseScore()
 	s.Metadata.Title = ""
@@ -165,6 +166,7 @@ func TestValidateReportsAllIssues(t *testing.T) {
 	}
 }
 
+// TestPitchName verifies conversion of MIDI note numbers to standard pitch notation strings.
 func TestPitchName(t *testing.T) {
 	tests := []struct {
 		pitch int

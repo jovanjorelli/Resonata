@@ -147,9 +147,7 @@ func TestReverbDensity(t *testing.T) {
 	}
 }
 
-// TestReverbHFDamping checks the air-absorption model: high-frequency
-// content decays faster than the overall tail, and stronger damping
-// darkens the late field.
+// TestReverbHFDamping verifies air absorption HF damping within the 8-line FDN feedback loop.
 func TestReverbHFDamping(t *testing.T) {
 	const sr = 48000
 	hfRatio := func(damping float32) (early, late float64) {
@@ -187,7 +185,7 @@ func TestReverbHFDamping(t *testing.T) {
 	}
 }
 
-// TestReverbRoomSizeOrdering checks longer rooms decay longer.
+// TestReverbRoomSizeOrdering verifies larger room sizes scale delay lines and increase RT60 reverberation decay time.
 func TestReverbRoomSizeOrdering(t *testing.T) {
 	const sr = 48000
 	decayFrames := func(roomSize float32) int {
@@ -224,8 +222,7 @@ func TestReverbRoomSizeOrdering(t *testing.T) {
 	}
 }
 
-// TestReverbAllpassFormula checks the Schroeder allpass against its
-// defining recursion and its energy-preserving property.
+// TestReverbAllpassFormula verifies Schroeder allpass diffuser difference equation y[n] = -g·x[n] + x[n-D] + g·y[n-D].
 func TestReverbAllpassFormula(t *testing.T) {
 	a := reverbAllpass{line: newFDNLine(8), gain: 0.5, gain2: 1 - 0.25}
 	a.line.length = 8
@@ -249,7 +246,7 @@ func TestReverbAllpassFormula(t *testing.T) {
 	}
 }
 
-// TestReverbPresets checks the preset table.
+// TestReverbPresets verifies standard acoustic preset parameter mappings (cathedral, hall, chapel, room, plate).
 func TestReverbPresets(t *testing.T) {
 	for _, name := range []string{"cathedral", "hall", "chapel", "room", "plate", " CATHEDRAL "} {
 		p, ok := PresetParams(name)
@@ -265,8 +262,7 @@ func TestReverbPresets(t *testing.T) {
 	}
 }
 
-// TestReverbStability hammers the network with full-scale noise and
-// checks bounded output and eventual decay.
+// TestReverbStability proves 8x8 orthonormal Hadamard feedback matrix preserves energy and prevents feedback explosion.
 func TestReverbStability(t *testing.T) {
 	const sr = 48000
 	r := NewReverb(sr, ReverbParams{RoomSize: 0.95, Damping: 0.2, Wet: 1, Dry: 0, Width: 1})
@@ -294,7 +290,7 @@ func TestReverbStability(t *testing.T) {
 	}
 }
 
-// TestReverbReset checks state clearing.
+// TestReverbReset verifies clearing all FDN comb delay lines and Schroeder allpass diffuser states.
 func TestReverbReset(t *testing.T) {
 	r := NewReverb(48000, ReverbParams{RoomSize: 0.8, Wet: 1, Dry: 0, Width: 1})
 	r.ProcessFrameWet(1, 1)
@@ -309,7 +305,7 @@ func TestReverbReset(t *testing.T) {
 	}
 }
 
-// TestReverbWetDryMix checks the ProcessFrame mix law and ProcessStereo.
+// TestReverbWetDryMix verifies linear wet/dry balance and stereo width spreading across ProcessFrame and ProcessStereo.
 func TestReverbWetDryMix(t *testing.T) {
 	const sr = 48000
 	p := ReverbParams{RoomSize: 0.7, Wet: 0.4, Dry: 0.6, Width: 1}
@@ -339,7 +335,7 @@ func TestReverbWetDryMix(t *testing.T) {
 	}
 }
 
-// TestReverbZeroAlloc checks the hot path.
+// TestReverbZeroAlloc proves algorithmic FDN reverb steady-state processing performs zero heap allocations.
 func TestReverbZeroAlloc(t *testing.T) {
 	r := NewReverb(48000, ReverbParams{RoomSize: 0.9, Wet: 1, Dry: 0, Width: 1})
 	buf := NewStereoBuffer(256)

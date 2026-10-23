@@ -34,11 +34,7 @@ func goertzelDB(master []float32, freq, from, to float64, sampleRate int) float6
 	return 20 * math.Log10(mag)
 }
 
-// TestEngineEQSpectral renders the EQ fixture score with and without its
-// per-track sculpts and proves with Goertzel probes that each measured
-// delta matches the track's theoretical RBJ response. Ported from the
-// retired debug binary so the end-to-end JSON coverage is
-// kept as a unit test.
+// TestEngineEQSpectral verifies track parametric EQ sculpts spectral energy distribution of rendered audio.
 func TestEngineEQSpectral(t *testing.T) {
 	const sampleRate = 48000
 	sculpted, err := score.ParseFile("../../test_data/eq_test.json")

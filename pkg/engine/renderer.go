@@ -21,17 +21,15 @@ type OfflineRenderer struct {
 	eng   *Engine
 	file  *os.File
 	w     *wav.Writer
-	sink  func(master []float32)
-	left  []float32 // de-interleaving scratch
+	left  []float32
 	right []float32
-	total int // frames to render
+	total int
 	done  int
 	peak  float32
 	err   error
 }
 
-// NewOfflineRenderer builds the engine for s and opens path for 24-bit
-// stereo output at sampleRate Hz.
+// NewOfflineRenderer creates a renderer writing 24-bit stereo WAV output for score s at sampleRate.
 func NewOfflineRenderer(s *score.Score, path string, sampleRate float64) (*OfflineRenderer, error) {
 	eng, err := New(s, sampleRate, DefaultBlockSize)
 	if err != nil {
@@ -46,25 +44,23 @@ func NewOfflineRenderer(s *score.Score, path string, sampleRate float64) (*Offli
 		f.Close()
 		return nil, err
 	}
-	r := &OfflineRenderer{
+	return &OfflineRenderer{
 		eng:   eng,
 		file:  f,
 		w:     w,
 		left:  make([]float32, eng.BlockSize()),
 		right: make([]float32, eng.BlockSize()),
 		total: eng.TotalFrames(),
-	}
-	r.sink = r.writeChunk
-	return r, nil
+	}, nil
 }
 
 // Engine exposes the underlying engine (score, duration, meters).
 func (r *OfflineRenderer) Engine() *Engine { return r.eng }
 
-// Done reports whether rendering finished, successfully or not.
-func (r *OfflineRenderer) Done() bool { return r.err != nil || r.done >= r.total }
+// Done reports whether the render has completed or failed with an error.
+func (r *OfflineRenderer) Done() bool { return r.Err() != nil || r.done >= r.total }
 
-// Progress is the completed fraction in [0, 1].
+// Progress returns the render completion ratio normalized to [0, 1].
 func (r *OfflineRenderer) Progress() float32 {
 	if r.total <= 0 {
 		return 1
@@ -76,24 +72,34 @@ func (r *OfflineRenderer) Progress() float32 {
 	return p
 }
 
-// Err returns the first failure recorded during rendering, if any.
-func (r *OfflineRenderer) Err() error { return r.err }
+// Err returns the first encountered error from the renderer or engine.
+func (r *OfflineRenderer) Err() error {
+	if r.err != nil {
+		return r.err
+	}
+	if r.eng != nil {
+		return r.eng.Err()
+	}
+	return nil
+}
 
-// Peak is the largest master magnitude rendered so far.
+// Peak returns the maximum absolute amplitude observed across all channels.
 func (r *OfflineRenderer) Peak() float32 { return r.peak }
 
-// Frames is the total number of frames the render will produce.
+// Frames returns the total duration of the score in sample frames.
 func (r *OfflineRenderer) Frames() int { return r.total }
 
-// ProcessBlock renders the next block to the file. Failures are recorded
-// and surfaced by Err; Done becomes true.
+// ProcessBlock advances the engine by up to one block of frames and writes the output.
 func (r *OfflineRenderer) ProcessBlock() {
 	if r.Done() {
 		return
 	}
 	n := min(r.eng.BlockSize(), r.total-r.done)
-	r.eng.ProcessFrames(n, r.sink)
+	r.eng.ProcessFrames(n, r.writeChunk)
 	r.done += n
+	if err := r.eng.Err(); err != nil && r.err == nil {
+		r.err = err
+	}
 }
 
 // writeChunk de-interleaves one rendered chunk into the WAV writer.

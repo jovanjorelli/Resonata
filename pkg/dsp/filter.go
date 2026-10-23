@@ -51,11 +51,14 @@ func NewBiquad(mode FilterMode, freq, q, sampleRate float64) *Biquad {
 // NewBiquadGain builds a filter with a gain in dB, used by the Peaking,
 // LowShelf, and HighShelf modes (ignored by the others).
 func NewBiquadGain(mode FilterMode, freq, q, gainDB, sampleRate float64) *Biquad {
-	if q <= 0 {
+	if math.IsNaN(q) || math.IsInf(q, 0) || q <= 0 {
 		q = defaultQ
 	}
-	if sampleRate <= 0 {
+	if math.IsNaN(sampleRate) || math.IsInf(sampleRate, 0) || sampleRate <= 0 {
 		sampleRate = 48000
+	}
+	if math.IsNaN(gainDB) || math.IsInf(gainDB, 0) {
+		gainDB = 0
 	}
 	f := &Biquad{mode: mode, q: q, gainDB: gainDB, sampleRate: sampleRate}
 	f.SetFrequency(freq)
@@ -65,6 +68,9 @@ func NewBiquadGain(mode FilterMode, freq, q, gainDB, sampleRate float64) *Biquad
 // SetGainDB retunes a peaking/shelf filter's gain and recomputes
 // coefficients.
 func (f *Biquad) SetGainDB(db float64) {
+	if math.IsNaN(db) || math.IsInf(db, 0) {
+		db = 0
+	}
 	f.gainDB = db
 	f.computeCoeffs()
 }
@@ -75,10 +81,10 @@ func (f *Biquad) GainDB() float64 { return f.gainDB }
 // SetFrequency retunes the filter and recomputes coefficients. The cutoff
 // is clamped into (0, Nyquist).
 func (f *Biquad) SetFrequency(freq float64) {
-	nyquist := f.sampleRate / 2
-	if freq <= 0 {
+	if math.IsNaN(freq) || math.IsInf(freq, 0) || freq <= 0 {
 		freq = 1e-3
 	}
+	nyquist := f.sampleRate / 2
 	if freq >= nyquist {
 		freq = math.Nextafter(nyquist, 0)
 	}
@@ -88,7 +94,7 @@ func (f *Biquad) SetFrequency(freq float64) {
 
 // SetQ updates the resonance and recomputes coefficients.
 func (f *Biquad) SetQ(q float64) {
-	if q <= 0 {
+	if math.IsNaN(q) || math.IsInf(q, 0) || q <= 0 {
 		q = defaultQ
 	}
 	f.q = q
@@ -169,18 +175,28 @@ func (f *Biquad) computeCoeffs() {
 	f.a2 = a2 / a0
 }
 
-// ProcessSample filters a single sample, carrying state across calls.
+// ProcessSample processes a single sample x through the RBJ biquad filter in Direct Form I:
+// y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2],
+// applying an anti-denormal flush to zero for |y| < 1e-25.
 func (f *Biquad) ProcessSample(x float32) float32 {
+	if math.IsNaN(float64(x)) || math.IsInf(float64(x), 0) {
+		x = 0
+	}
 	xi := float64(x)
 	y := f.b0*xi + f.b1*f.x1 + f.b2*f.x2 - f.a1*f.y1 - f.a2*f.y2
+	if math.IsNaN(y) || math.IsInf(y, 0) {
+		y = 0
+		f.x1, f.x2, f.y1, f.y2 = 0, 0, 0, 0
+	} else if math.Abs(y) < 1e-25 {
+		y = 0
+	}
 	f.x2, f.x1 = f.x1, xi
 	f.y2, f.y1 = f.y1, y
 	return float32(y)
 }
 
-// Process filters src into dst frame-by-frame, carrying state across
-// calls. dst may alias src; if dst is shorter, trailing frames are
-// dropped.
+// Process filters src into dst frame-by-frame using the RBJ Direct Form I difference equation
+// with anti-denormal flushing (< 1e-25), carrying state across calls. dst may alias src; if dst is shorter, trailing frames are dropped.
 func (f *Biquad) Process(dst, src []float32) {
 	for i, in := range src {
 		y := f.ProcessSample(in)
@@ -190,8 +206,8 @@ func (f *Biquad) Process(dst, src []float32) {
 	}
 }
 
-// ProcessInPlace filters one channel in place. For stereo, use one Biquad
-// per channel so the delay lines stay independent.
+// ProcessInPlace filters one channel in place using the RBJ Direct Form I difference equation
+// with anti-denormal flushing (< 1e-25). For stereo, use independent Biquad instances.
 func (f *Biquad) ProcessInPlace(b []float32) {
 	f.Process(b, b)
 }

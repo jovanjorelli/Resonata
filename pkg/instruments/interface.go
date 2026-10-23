@@ -54,9 +54,13 @@ type EnvelopeVoicer interface {
 	NoteOnEx(pitch int, velocity float32, env EnvelopeOverride)
 }
 
-// Instrument is a sound generator driven by MIDI-style note events.
-// Implementations render into pre-allocated buffers and must not allocate
-// during Process.
+// PedalVoicer is optionally implemented by instruments responding to sustain pedal events.
+type PedalVoicer interface {
+	Instrument
+	SetPedal(down bool)
+}
+
+// Instrument defines the common synthesis and voice interface for audio rendering.
 type Instrument interface {
 	// Process renders buffer.Len() frames of audio, advancing internal
 	// state deltaTime seconds per frame.

@@ -2,8 +2,6 @@
 bin/
 *.exe
 /resonata
-/orchestron
-/orchestron.exe
 
 # Test artifacts (generated renders; fixtures in test_data/ stay tracked)
 *.wav
@@ -11,14 +9,16 @@ bin/
 *.midi
 !test_data/*.mid
 !test_data/*.midi
+!demo/demo_track.wav
 out.wav
 delay_test.wav
 test_output*.wav
 output*.wav
 render_result*.wav
 
-# Profiling
+# Profiling and coverage
 *.prof
+*.out
 coverage.out
 coverage.html
 cover_*.out

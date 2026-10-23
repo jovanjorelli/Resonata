@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-// TestEnvelopeLifecycle walks every ADSR stage and the Fill/Apply
-// helpers, plus the clamp helpers and mid-note retunes.
+// TestEnvelopeLifecycle verifies ADSR stages (Attack, Decay, Sustain, Release) and buffer Fill/Apply helpers.
 func TestEnvelopeLifecycle(t *testing.T) {
 	e := NewEnvelope(0.01, 0.02, 0.7, 0.03)
 	if e.Stage() != StageIdle || e.Value() != 0 {
@@ -79,7 +78,7 @@ func TestEnvelopeLifecycle(t *testing.T) {
 	}
 }
 
-// TestBufferHelpers covers the StereoBuffer reuse API.
+// TestBufferHelpers verifies StereoBuffer allocation, truncation, clearing, and reuse APIs.
 func TestBufferHelpers(t *testing.T) {
 	b := NewStereoBuffer(8)
 	if b.Cap() != 8 || b.Len() != 0 {
@@ -130,7 +129,7 @@ func TestBufferHelpers(t *testing.T) {
 	}
 }
 
-// TestSawOscillator checks the sawtooth shape, retune, and Fill.
+// TestSawOscillator verifies band-unlimited sawtooth wave 2·(phase - floor(phase)) - 1 generation and retuning.
 func TestSawOscillator(t *testing.T) {
 	s := NewSaw()
 	s.SetFrequency(48000, 48000) // one cycle per frame: ramp restarts
@@ -164,7 +163,7 @@ func TestSawOscillator(t *testing.T) {
 	}
 }
 
-// TestLimiterAccessors covers the setter/getter surface.
+// TestLimiterAccessors verifies mastering limiter threshold (dBFS), knee (dB), and ceiling getters and setters.
 func TestLimiterAccessors(t *testing.T) {
 	l := NewLimiter(48000)
 	l.SetKneeDB(12)
@@ -196,7 +195,7 @@ func TestLimiterAccessors(t *testing.T) {
 	}
 }
 
-// TestFilterAccessors covers biquad retunes and reporting.
+// TestFilterAccessors verifies RBJ biquad cutoff frequency in Hz, Q damping, and gain in dB accessors.
 func TestFilterAccessors(t *testing.T) {
 	f := NewBiquad(Peaking, 1000, 1, 48000)
 	f.SetGainDB(6)
@@ -224,7 +223,7 @@ func TestFilterAccessors(t *testing.T) {
 	}
 }
 
-// TestEQMisc covers reporting, reset, and the aliased copy path.
+// TestEQMisc verifies 4-stage parametric EQ reporting, state reset, and filter parameter copy paths.
 func TestEQMisc(t *testing.T) {
 	e := NewEQ(48000, EQSpec{})
 	if e.Bands() != 0 || e.Spec().HPF != 0 {
@@ -241,7 +240,7 @@ func TestEQMisc(t *testing.T) {
 	e.Reset() // must not panic on idle stages
 }
 
-// TestDelayAccessors covers delay reporting helpers.
+// TestDelayAccessors verifies stereo delay line length in samples, feedback, damping, and wet mix accessors.
 func TestDelayAccessors(t *testing.T) {
 	d := NewStereoDelay(48000, MaxDelaySeconds)
 	d.Configure(DelayConfig{Subdivision: SubdivisionQuarter, Feedback: 0.5, DampingHz: 4000, Wet: 0.5}, 120)
@@ -260,7 +259,7 @@ func TestDelayAccessors(t *testing.T) {
 	}
 }
 
-// TestReverbParamsReporter covers the Params accessor.
+// TestReverbParamsReporter verifies FDN reverb acoustic parameter reflection.
 func TestReverbParamsReporter(t *testing.T) {
 	p := ReverbParams{RoomSize: 0.7, Damping: 0.3, Wet: 0.5, Dry: 0.5, Width: 0.8}
 	r := NewReverb(48000, p)
@@ -269,7 +268,7 @@ func TestReverbParamsReporter(t *testing.T) {
 	}
 }
 
-// TestOscillatorPhase covers the Phase reporters.
+// TestOscillatorPhase verifies oscillator phase accumulator reporting in cycles [0, 1) and radians.
 func TestOscillatorPhase(t *testing.T) {
 	s := NewSine()
 	if s.Phase() != 0 {
@@ -280,5 +279,15 @@ func TestOscillatorPhase(t *testing.T) {
 	saw.Next()
 	if saw.Phase() != 0.25 {
 		t.Fatalf("saw phase = %v, want 0.25", saw.Phase())
+	}
+}
+
+// TestBiquadDenormalFlush verifies anti-denormal flush to zero (< 1e-25) suppresses subnormal floating-point values.
+func TestBiquadDenormalFlush(t *testing.T) {
+	f := NewBiquad(Lowpass, 1000, 1, 48000)
+	tiny := float32(1e-28)
+	out := f.ProcessSample(tiny)
+	if out != 0 {
+		t.Fatalf("expected denormal input to flush to 0, got %v", out)
 	}
 }

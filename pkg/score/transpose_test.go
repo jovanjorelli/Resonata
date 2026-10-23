@@ -88,7 +88,7 @@ func equalInts(a, b []int) bool {
 	return true
 }
 
-// TestTransposeGlobalUp shifts every note up one octave via metadata.
+// TestTransposeGlobalUp verifies global metadata transposition shifts all notes up by semitones.
 func TestTransposeGlobalUp(t *testing.T) {
 	s := mustParseJSON(t, transposeScore(12,
 		[]string{"Violins"}, []string{"vln"}, []int{0}, []int{60, 64, 67}))
@@ -103,7 +103,7 @@ func TestTransposeGlobalUp(t *testing.T) {
 	}
 }
 
-// TestTransposeTrackDown shifts one track down one octave via the track.
+// TestTransposeTrackDown verifies per-track transposition shifts individual track notes down.
 func TestTransposeTrackDown(t *testing.T) {
 	s := mustParseJSON(t, transposeScore(0,
 		[]string{"Cellos"}, []string{"vlc"}, []int{-12}, []int{60, 64, 67}))
@@ -115,7 +115,7 @@ func TestTransposeTrackDown(t *testing.T) {
 	}
 }
 
-// TestTransposeCombined adds global and track shifts: 60 + 2 - 5 = 57.
+// TestTransposeCombined verifies additive composition of global and per-track transpositions.
 func TestTransposeCombined(t *testing.T) {
 	s := mustParseJSON(t, transposeScore(2,
 		[]string{"Violas"}, []string{"vla"}, []int{-5}, []int{60}))
@@ -124,8 +124,7 @@ func TestTransposeCombined(t *testing.T) {
 	}
 }
 
-// TestTransposeMultipleTracks applies one global shift with per-track
-// offsets: 60+1, 60+1+3, 60+1-2.
+// TestTransposeMultipleTracks verifies independent transposition across multiple concurrent tracks.
 func TestTransposeMultipleTracks(t *testing.T) {
 	s := mustParseJSON(t, transposeScore(1,
 		[]string{"A", "B", "C"}, []string{"a", "b", "c"}, []int{0, 3, -2},
@@ -137,12 +136,10 @@ func TestTransposeMultipleTracks(t *testing.T) {
 	}
 }
 
-// TestTransposeAboveRange rejects a note transposed past 127 with a
-// detailed error.
+// TestTransposeAboveRange verifies transposition exceeding maximum MIDI pitch (127) returns error.
 func TestTransposeAboveRange(t *testing.T) {
-	s := mustParseJSON(t, transposeScore(12,
-		[]string{"Violins"}, []string{"vln"}, []int{0}, []int{120}))
-	err := Validate(s)
+	_, err := ParseJSON([]byte(transposeScore(12,
+		[]string{"Violins"}, []string{"vln"}, []int{0}, []int{120})))
 	if err == nil {
 		t.Fatal("want error for pitch 132, got nil")
 	}
@@ -157,12 +154,10 @@ func TestTransposeAboveRange(t *testing.T) {
 	}
 }
 
-// TestTransposeBelowRange rejects a note transposed below 0 with a
-// detailed error.
+// TestTransposeBelowRange verifies transposition dropping below minimum MIDI pitch (0) returns error.
 func TestTransposeBelowRange(t *testing.T) {
-	s := mustParseJSON(t, transposeScore(-12,
-		[]string{"Basses"}, []string{"bass"}, []int{0}, []int{5}))
-	err := Validate(s)
+	_, err := ParseJSON([]byte(transposeScore(-12,
+		[]string{"Basses"}, []string{"bass"}, []int{0}, []int{5})))
 	if err == nil {
 		t.Fatal("want error for pitch -7, got nil")
 	}
@@ -177,7 +172,7 @@ func TestTransposeBelowRange(t *testing.T) {
 	}
 }
 
-// TestTransposeZeroDefault leaves boundary pitches untouched and valid.
+// TestTransposeZeroDefault verifies zero transposition leaves MIDI pitches unchanged.
 func TestTransposeZeroDefault(t *testing.T) {
 	s := mustParseJSON(t, `{"metadata": {"title": "T", "bpm": 120, "time_signature": "4/4"},
 		"tracks": [{"id": "t", "name": "Solo", "instrument": {"type": "ocarina"},
@@ -197,12 +192,11 @@ func TestTransposeZeroDefault(t *testing.T) {
 	}
 }
 
-// TestTransposeMultipleErrors collects one error per offending note.
+// TestTransposeMultipleErrors verifies multiple out-of-range transposition errors are joined.
 func TestTransposeMultipleErrors(t *testing.T) {
-	s := mustParseJSON(t, transposeScore(24,
+	_, err := ParseJSON([]byte(transposeScore(24,
 		[]string{"Brass"}, []string{"brass"}, []int{0},
-		[]int{104, 108, 112, 116, 120}))
-	err := Validate(s)
+		[]int{104, 108, 112, 116, 120})))
 	if err == nil {
 		t.Fatal("want 5 errors, got nil")
 	}

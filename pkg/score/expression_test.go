@@ -47,21 +47,21 @@ func closeF64(t *testing.T, got, want float64, what string) {
 	}
 }
 
-// TestTimingOffsetPositive delays a note by 5 ms.
+// TestTimingOffsetPositive verifies delaying a note start time by positive offset.
 func TestTimingOffsetPositive(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 1.0, "duration": 0.5, "pitch": 60, "velocity": 0.8, "timing_offset_ms": 5.0}`))
 	closeF64(t, s.Tracks[0].Notes[0].Time, 1.005, "time")
 }
 
-// TestTimingOffsetNegative advances a note by 3 ms.
+// TestTimingOffsetNegative verifies advancing a note start time by negative offset.
 func TestTimingOffsetNegative(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 1.0, "duration": 0.5, "pitch": 60, "velocity": 0.8, "timing_offset_ms": -3.0}`))
 	closeF64(t, s.Tracks[0].Notes[0].Time, 0.997, "time")
 }
 
-// TestTimingOffsetClampZero keeps a dragged note inside the score.
+// TestTimingOffsetClampZero verifies negative timing offset clamps to zero avoiding negative time.
 func TestTimingOffsetClampZero(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 0.001, "duration": 0.5, "pitch": 60, "velocity": 0.8, "timing_offset_ms": -5.0}`))
@@ -79,7 +79,7 @@ func swingEighths() []string {
 	}
 }
 
-// TestSwingFull delays off-beats by one-third of the 0.5 s beat.
+// TestSwingFull verifies maximum swing ratio delays off-beat notes by one third of beat duration.
 func TestSwingFull(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", `"swing": 1.0`, swingEighths()...))
 	got := s.Tracks[0].Notes
@@ -93,7 +93,7 @@ func TestSwingFull(t *testing.T) {
 	}
 }
 
-// TestSwingZero leaves every note untouched.
+// TestSwingZero verifies zero swing retains strict unshifted rhythmic timing.
 func TestSwingZero(t *testing.T) {
 	s := mustParseExpr(t, exprScore(`"swing": 0.0`, `"swing": 0.0`, swingEighths()...))
 	for i, want := range []float64{0.0, 0.25, 0.5, 0.75} {
@@ -101,14 +101,13 @@ func TestSwingZero(t *testing.T) {
 	}
 }
 
-// TestSwingOverride prefers the track value over the metadata value:
-// 0.8 swing delays the 0.25 off-beat by 0.8 * 0.5 / 3, not 0.5 * 0.5 / 3.
+// TestSwingOverride verifies track-level swing setting takes precedence over score metadata.
 func TestSwingOverride(t *testing.T) {
 	s := mustParseExpr(t, exprScore(`"swing": 0.5`, `"swing": 0.8`, swingEighths()...))
 	closeF64(t, s.Tracks[0].Notes[1].Time, 0.25+0.8*0.5/3, "off-beat time")
 }
 
-// TestAccentMultiplier scales velocity: 0.7 * 1.3 = 0.91.
+// TestAccentMultiplier verifies accent dynamics scale base note velocity.
 func TestAccentMultiplier(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 0.0, "duration": 0.5, "pitch": 60, "velocity": 0.7, "accent": 1.3}`))
@@ -118,7 +117,7 @@ func TestAccentMultiplier(t *testing.T) {
 	}
 }
 
-// TestAccentClamping caps the boosted velocity at 1.0.
+// TestAccentClamping verifies accent velocity scaling is bounded by maximum velocity 1.0.
 func TestAccentClamping(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 0.0, "duration": 0.5, "pitch": 60, "velocity": 0.9, "accent": 1.5}`))
@@ -127,7 +126,7 @@ func TestAccentClamping(t *testing.T) {
 	}
 }
 
-// TestAccentDefault keeps an unaccented note at its base velocity.
+// TestAccentDefault verifies unaccented notes retain their original base velocity.
 func TestAccentDefault(t *testing.T) {
 	s := mustParseExpr(t, exprScore("", "",
 		`{"time": 0.0, "duration": 0.5, "pitch": 60, "velocity": 0.7}`))

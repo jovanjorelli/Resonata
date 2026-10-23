@@ -191,7 +191,7 @@ func sustainPeak(t *testing.T, s *Sampler) float32 {
 	return peak
 }
 
-// TestExpressionGain halves sustained output at expression 0.5.
+// TestExpressionGain verifies expression parameter scales sustained voice amplitude by linear gain.
 func TestExpressionGain(t *testing.T) {
 	half := constSampler(0.5)
 	half.NoteOnParams(60, 0.8, instruments.NoteParams{Expression: 0.5, HasExpression: true})
@@ -207,7 +207,7 @@ func TestExpressionGain(t *testing.T) {
 	}
 }
 
-// TestExpressionDefault leaves output untouched without expression.
+// TestExpressionDefault verifies default expression keeps sustained output at full unity gain.
 func TestExpressionDefault(t *testing.T) {
 	plain := constSampler(0.5)
 	plain.NoteOn(60, 0.8)

@@ -1,21 +1,23 @@
-// Profiling helpers for the headless renderer.
-//
-// CPU and memory profiles use the standard library runtime/pprof so no
-// extra dependencies are required. Profiles are written to the paths
-// given by --profile-cpu and --profile-mem.
 package main
 
 import (
 	"fmt"
 	"os"
 	"runtime/pprof"
+	"sync"
 )
 
-// cpuProfileFile holds the active CPU profile output.
-var cpuProfileFile *os.File
+var (
+	cpuMu          sync.Mutex
+	cpuProfileFile *os.File
+)
 
-// startCPUProfile begins CPU profiling, writing to path.
 func startCPUProfile(path string) error {
+	cpuMu.Lock()
+	defer cpuMu.Unlock()
+	if cpuProfileFile != nil {
+		return fmt.Errorf("cpu profile already active")
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create cpu profile: %w", err)
@@ -28,8 +30,9 @@ func startCPUProfile(path string) error {
 	return nil
 }
 
-// stopCPUProfile stops CPU profiling and closes the output file.
 func stopCPUProfile() {
+	cpuMu.Lock()
+	defer cpuMu.Unlock()
 	pprof.StopCPUProfile()
 	if cpuProfileFile != nil {
 		cpuProfileFile.Close()

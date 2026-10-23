@@ -30,8 +30,7 @@ func vibScore() *score.Score {
 	}
 }
 
-// TestVibratoOverride prefers the note rate over the track rate and
-// falls back to the track value when the note sets none.
+// TestVibratoOverride verifies note-level vibrato parameter override takes precedence over track vibrato.
 func TestVibratoOverride(t *testing.T) {
 	e, err := New(vibScore(), 48000, 256)
 	if err != nil {
@@ -61,8 +60,7 @@ func TestVibratoOverride(t *testing.T) {
 	e.ProcessFrames(e.TotalFrames(), nil)
 }
 
-// TestExpressionOverride prefers the note gain over the track gain and
-// falls back to the track value when the note sets none.
+// TestExpressionOverride verifies note-level expression gain override takes precedence over track expression.
 func TestExpressionOverride(t *testing.T) {
 	e, err := New(vibScore(), 48000, 256)
 	if err != nil {

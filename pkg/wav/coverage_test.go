@@ -50,7 +50,7 @@ func smplFile(t *testing.T, path string) {
 	}
 }
 
-// TestDecodeSmplLoop checks smpl loop extraction and 16-bit scaling.
+// TestDecodeSmplLoop verifies smpl loop points extraction and 16-bit integer PCM sample scaling.
 func TestDecodeSmplLoop(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "loop.wav")
 	smplFile(t, path)
@@ -101,8 +101,7 @@ func TestDecodeSmplLoop(t *testing.T) {
 	}
 }
 
-// TestFloatToIntEdges covers NaN and out-of-range clamping on every
-// integer encoder.
+// TestFloatToIntEdges verifies NaN and out-of-range float sample clamping across 16, 24, and 32-bit PCM encoders.
 func TestFloatToIntEdges(t *testing.T) {
 	nan := float32(math.NaN())
 	if floatToInt16(nan) != 0 || floatToInt24(nan) != 0 || floatToInt32(nan) != 0 {
@@ -122,8 +121,7 @@ func TestFloatToIntEdges(t *testing.T) {
 	}
 }
 
-// TestWriterAccessors covers the reporting methods and the
-// constructor's bit-depth validation.
+// TestWriterAccessors verifies writer reporting methods and sample rate accessor consistency.
 func TestWriterAccessors(t *testing.T) {
 	f, w := writeTemp(t, "acc.wav", PCM24, 48000, 2)
 	if w.SampleRate() != 48000 || w.Channels() != 2 || w.Frames() != 0 {
@@ -172,9 +170,9 @@ func TestWriterAccessors(t *testing.T) {
 	_ = path
 }
 
-// TestChannelMaskTable checks every speaker mask branch.
+// TestChannelMaskTable verifies channel mask bit assignments for standard speaker configurations.
 func TestChannelMaskTable(t *testing.T) {
-	cases := map[int]uint32{1: 0x4, 2: 0x3, 3: 0x7, 4: 0x33, 5: 0x37, 6: 0x3F, 7: 0x7F, 8: 0xFF}
+	cases := map[int]uint32{1: 0x4, 2: 0x3, 3: 0x7, 4: 0x33, 5: 0x37, 6: 0x3F, 7: 0x7F, 8: 0x63F}
 	for ch, want := range cases {
 		if got := channelMask(ch); got != want {
 			t.Errorf("mask(%d) = %#x, want %#x", ch, got, want)
@@ -185,7 +183,7 @@ func TestChannelMaskTable(t *testing.T) {
 	}
 }
 
-// TestDecodeErrors checks malformed inputs fail with errors, not panics.
+// TestDecodeErrors verifies malformed RIFF chunks and truncated headers return errors without panic.
 func TestDecodeErrors(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string, raw []byte) string {
@@ -236,7 +234,7 @@ func chunkFile(t *testing.T, path string, tag uint16, bits uint16) {
 	}
 }
 
-// TestValidateFmtDepths checks unsupported bit depths are rejected.
+// TestValidateFmtDepths verifies unsupported container depths and corrupt format payloads fail validation.
 func TestValidateFmtDepths(t *testing.T) {
 	dir := t.TempDir()
 	for _, tc := range []struct {

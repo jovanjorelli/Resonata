@@ -12,9 +12,7 @@ import (
 // messyPath is the committed real-world torture fixture.
 const messyPath = "../../../test_data/messy_real_world.sfz"
 
-// TestMessySFZ parses the deliberately messy vendor-style fixture and
-// checks paths with spaces, pitch-name keys, hierarchical inheritance,
-// unknown-opcode tolerance, and parse statistics.
+// TestMessySFZ verifies parsing real-world malformed SFZ files with comments, mixed case, and stray tokens.
 func TestMessySFZ(t *testing.T) {
 	data, err := os.ReadFile(messyPath)
 	if err != nil {
@@ -154,6 +152,7 @@ func TestMessySFZ(t *testing.T) {
 	}
 }
 
+// TestTokenizerLookahead verifies SFZ tokenizer lookahead and token boundary identification.
 func TestTokenizerLookahead(t *testing.T) {
 	// Values run until whitespace followed by an opcode, header, comment,
 	// or end of input.
@@ -219,6 +218,7 @@ func TestTokenizerLookahead(t *testing.T) {
 	}
 }
 
+// TestTokenizerZeroCopy verifies zero-copy token slicing from source buffer.
 func TestTokenizerZeroCopy(t *testing.T) {
 	data := []byte("sample=a b.wav lokey=60")
 	tok := NewTokenizer(data)
@@ -233,6 +233,7 @@ func TestTokenizerZeroCopy(t *testing.T) {
 	}
 }
 
+// TestParsePitchTable verifies MIDI note name to integer pitch mapping across all octaves.
 func TestParsePitchTable(t *testing.T) {
 	valid := []struct {
 		name string
@@ -255,6 +256,7 @@ func TestParsePitchTable(t *testing.T) {
 	}
 }
 
+// TestDispatchCoverage verifies opcode dispatch table coverage for all supported SFZ opcodes.
 func TestDispatchCoverage(t *testing.T) {
 	if len(opcodeDispatch) < 100 {
 		t.Fatalf("opcodeDispatch has %d entries, want 100+", len(opcodeDispatch))
@@ -269,7 +271,7 @@ func TestDispatchCoverage(t *testing.T) {
 	}
 }
 
-// TestRegionWindow checks offset/end sample-window playback.
+// TestRegionWindow verifies sample playback offset and end sample-window clipping.
 func TestRegionWindow(t *testing.T) {
 	sd := &SampleData{Samples: make([]float32, 100), SampleRate: 48000, Channels: 1}
 	for i := range sd.Samples {
@@ -302,7 +304,7 @@ func TestRegionWindow(t *testing.T) {
 	}
 }
 
-// TestOffByCutoff checks exclusive voice groups.
+// TestOffByCutoff verifies exclusive voice cutoff groups muting previous sounding voices.
 func TestOffByCutoff(t *testing.T) {
 	sd := &SampleData{Samples: make([]float32, 48000), SampleRate: 48000, Channels: 1}
 	for i := range sd.Samples {
@@ -335,8 +337,7 @@ func TestOffByCutoff(t *testing.T) {
 	}
 }
 
-// TestAmpEGOverride checks that a region ampeg replaces the sampler
-// envelope defaults (fast 10 ms release here).
+// TestAmpEGOverride verifies region ampeg envelope times override default sampler envelope.
 func TestAmpEGOverride(t *testing.T) {
 	sd := &SampleData{Samples: make([]float32, 48000), SampleRate: 48000, Channels: 1}
 	for i := range sd.Samples {

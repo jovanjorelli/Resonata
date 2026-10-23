@@ -20,7 +20,7 @@ func delayAuthorityScore(wet float32) *score.Score {
 				Parameters: map[string]float32{"breath_noise": 0.2}},
 			Delay: &score.TrackDelay{
 				Mode: "stereo", Subdivision: "1/8",
-				Feedback: 0.5, DampingHz: 4000, Wet: wet, Send: 1,
+				Feedback: 0.5, DampingHz: 4000, Wet: wet,
 			},
 			Notes: []score.NoteEvent{{Time: 0, Duration: 1.0, Pitch: 69, Velocity: 0.9}},
 		}},

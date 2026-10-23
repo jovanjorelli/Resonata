@@ -1,8 +1,7 @@
-// Command resonata is the headless Resonata rendering engine.
+// Package main provides the command-line interface and batch rendering engine for Resonata.
 //
-// It renders score files (JSON or YAML) to WAV audio without any GUI
-// dependencies. All audio processing uses pre-allocated buffers so the
-// render loop performs no allocations.
+// It renders score files (JSON) to WAV audio without any GUI dependencies.
+// All audio processing uses pre-allocated buffers so the render loop performs no allocations.
 package main
 
 import (
@@ -25,13 +24,13 @@ import (
 	"resonata/pkg/score"
 )
 
-// Version is the Resonata release version, pinned at 2.
-const Version = "2"
+// Version is the current semantic major version string of the Resonata renderer.
+const Version = "3"
 
 // CLIConfig holds all command line options for the headless renderer.
 type CLIConfig struct {
 	// Core operations
-	ScorePath  string // -score, --score: input JSON/YAML score
+	ScorePath  string
 	OutputPath string // -o, --output: output WAV path
 
 	// Rendering modes
@@ -75,13 +74,11 @@ type CLIConfig struct {
 // parseFlags reads command line flags into a CLIConfig.
 func parseFlags() *CLIConfig {
 	cfg := &CLIConfig{}
-	// --score string, default "": input score file (JSON or YAML);
-	// empty falls back to --import-midi, else the run errors.
-	flag.StringVar(&cfg.ScorePath, "score", "", "input score file (JSON or YAML)")
+	flag.StringVar(&cfg.ScorePath, "score", "", "JSON score file (legacy alias: --load)")
 	// -s: shorthand alias writing the same ScorePath field.
 	flag.StringVar(&cfg.ScorePath, "s", "", "input score file, shorthand")
 	// --output string, default "" (rendered as out.wav): output WAV path.
-	flag.StringVar(&cfg.OutputPath, "output", "", "output WAV path")
+	flag.StringVar(&cfg.OutputPath, "output", "", "output WAV path (legacy alias: --out)")
 	// -o: shorthand alias writing the same OutputPath field.
 	flag.StringVar(&cfg.OutputPath, "o", "", "output WAV path, shorthand")
 	// --mode string, default "offline": only offline and stream are
@@ -422,9 +419,9 @@ func renderToFile(cfg *CLIConfig, s *score.Score, progress chan<- float64) (rend
 	if err != nil {
 		return stats, err
 	}
+	defer f.Close()
 	w, err := spec.NewWriter(f)
 	if err != nil {
-		f.Close()
 		return stats, err
 	}
 
@@ -487,6 +484,11 @@ func renderToFile(cfg *CLIConfig, s *score.Score, progress chan<- float64) (rend
 			w.Close()
 			f.Close()
 			return stats, writeErr
+		}
+		if err := eng.Err(); err != nil {
+			w.Close()
+			f.Close()
+			return stats, err
 		}
 		done += n
 		report()

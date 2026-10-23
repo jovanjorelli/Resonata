@@ -212,13 +212,17 @@ func LoadSFZ(path string) (*SFZFile, error) {
 			}
 			cache[p] = sd
 		}
-		rg.Sample = sd
-		// Region-level loop opcodes override the sample's own loop points.
-		if rg.LoopStart >= 0 {
-			sd.LoopStart = rg.LoopStart
-		}
-		if rg.LoopEnd >= 0 {
-			sd.LoopEnd = rg.LoopEnd
+		if rg.LoopStart >= 0 || rg.LoopEnd >= 0 {
+			customSD := *sd
+			if rg.LoopStart >= 0 {
+				customSD.LoopStart = rg.LoopStart
+			}
+			if rg.LoopEnd >= 0 {
+				customSD.LoopEnd = rg.LoopEnd
+			}
+			rg.Sample = &customSD
+		} else {
+			rg.Sample = sd
 		}
 	}
 	return f, nil

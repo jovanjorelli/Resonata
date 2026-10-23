@@ -6,9 +6,7 @@ import (
 	"resonata/pkg/score"
 )
 
-// TestEnvelopeOverrideDispatch schedules per-note envelope overrides
-// into the event stream and renders through the override path,
-// including an EQ-wrapped track exercising eqInstrument forwarding.
+// TestEnvelopeOverrideDispatch verifies dispatching per-note ADSR envelope overrides through ParamsVoicer interface.
 func TestEnvelopeOverrideDispatch(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},

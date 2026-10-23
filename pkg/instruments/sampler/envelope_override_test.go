@@ -47,7 +47,7 @@ func soundingVoice(t *testing.T, s *Sampler) *Voice {
 	return nil
 }
 
-// TestEnvelopeOverrideAttack replaces the region attack for one note.
+// TestEnvelopeOverrideAttack verifies per-note attack override replaces region ampeg attack time.
 func TestEnvelopeOverrideAttack(t *testing.T) {
 	s := egSampler(0.1, 0.2, 100, 0.3)
 	s.NoteOnEx(60, 1.0, instruments.EnvelopeOverride{Attack: 0.5, HasAttack: true})
@@ -55,7 +55,7 @@ func TestEnvelopeOverrideAttack(t *testing.T) {
 	closeTime(t, v.Envelope.AttackTime(), 0.5, "attack")
 }
 
-// TestEnvelopeOverrideRelease replaces the region release for one note.
+// TestEnvelopeOverrideRelease verifies per-note release override replaces region ampeg release time.
 func TestEnvelopeOverrideRelease(t *testing.T) {
 	s := egSampler(0.1, 0.2, 100, 0.3)
 	s.NoteOnEx(60, 1.0, instruments.EnvelopeOverride{Release: 2.0, HasRelease: true})
@@ -64,7 +64,7 @@ func TestEnvelopeOverrideRelease(t *testing.T) {
 	closeTime(t, v.Envelope.ReleaseTime(), 2.0, "release")
 }
 
-// TestEnvelopeOverrideNone keeps the SFZ times without overrides.
+// TestEnvelopeOverrideNone verifies regions retain default SFZ envelope times when no overrides are passed.
 func TestEnvelopeOverrideNone(t *testing.T) {
 	s := egSampler(0.1, 0.2, 100, 0.3)
 	s.NoteOn(60, 1.0)
@@ -74,7 +74,7 @@ func TestEnvelopeOverrideNone(t *testing.T) {
 	closeTime(t, v.Envelope.ReleaseTime(), 0.3, "release")
 }
 
-// TestEnvelopeOverridePartial replaces only the flagged time.
+// TestEnvelopeOverridePartial verifies selective override of individual envelope stages.
 func TestEnvelopeOverridePartial(t *testing.T) {
 	s := egSampler(0.1, 0.2, 100, 0.3)
 	s.NoteOnEx(60, 1.0, instruments.EnvelopeOverride{Release: 1.0, HasRelease: true})
@@ -87,8 +87,7 @@ func TestEnvelopeOverridePartial(t *testing.T) {
 	}
 }
 
-// TestEnvelopeOverrideFastAttack peaks the envelope in a single frame
-// when the frame spans the 1 ms override attack.
+// TestEnvelopeOverrideFastAttack verifies instantaneous attack override peaks envelope within a single sample.
 func TestEnvelopeOverrideFastAttack(t *testing.T) {
 	s := egSampler(0.5, 0.2, 100, 0.3)
 	s.NoteOnEx(60, 1.0, instruments.EnvelopeOverride{Attack: 0.001, HasAttack: true})

@@ -1,5 +1,4 @@
-// Package score defines Resonata's score DSL: the data model, JSON/YAML
-// parsers, and schema validation for orchestral scores.
+// Package score defines the musical composition data model, JSON parser, and semantic validator.
 package score
 
 import (
@@ -66,7 +65,6 @@ type TrackDelay struct {
 	Feedback    float32 `json:"feedback,omitempty"`    // 0.0 to 0.98 loop gain
 	DampingHz   float32 `json:"damping_hz,omitempty"`  // 1-pole lowpass cutoff, default 4000
 	Wet         float32 `json:"wet,omitempty"`         // 0.0 to 1.0 track echo return mix
-	Send        float32 `json:"send,omitempty"`        // deprecated: parsed but ignored
 }
 
 // EQBand is one parametric EQ band in the score DSL.

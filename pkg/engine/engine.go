@@ -157,7 +157,15 @@ func New(s *score.Score, sampleRate float64, blockSize int) (*Engine, error) {
 		}
 		return !e.events[a].on && e.events[b].on // note-offs first on shared frames
 	})
-	e.totalFrames = int(math.Round(s.Duration()*sampleRate)) + int(tailSeconds*sampleRate)
+	lastEventFrame := 0
+	if len(e.events) > 0 {
+		lastEventFrame = e.events[len(e.events)-1].frame
+	}
+	scoreDurationFrames := int(math.Round(s.Duration() * sampleRate))
+	if lastEventFrame > scoreDurationFrames {
+		scoreDurationFrames = lastEventFrame
+	}
+	e.totalFrames = scoreDurationFrames + int(tailSeconds*sampleRate)
 	return e, nil
 }
 
@@ -344,19 +352,15 @@ func (e *eqInstrument) SetParameters(params map[string]float32) {
 	e.inner.SetParameters(params)
 }
 
-// SetPedal forwards sustain-pedal moves to the wrapped instrument when
-// it accepts them; other voices ignore the pedal.
+// SetPedal forwards the sustain pedal position to the wrapped instrument if it implements PedalVoicer.
 func (e *eqInstrument) SetPedal(down bool) {
-	if p, ok := e.inner.(interface{ SetPedal(bool) }); ok {
+	if p, ok := e.inner.(instruments.PedalVoicer); ok {
 		p.SetPedal(down)
 	}
 }
 
-// setPedal applies a sustain-pedal move to instruments that accept it
-// (the sampler, directly or EQ-wrapped); other voices ignore it.
-// Allocation-free: one type assertion, no heap use.
 func setPedal(inst instruments.Instrument, down bool) {
-	if p, ok := inst.(interface{ SetPedal(bool) }); ok {
+	if p, ok := inst.(instruments.PedalVoicer); ok {
 		p.SetPedal(down)
 	}
 }
@@ -370,8 +374,11 @@ func (e *Engine) SampleRate() float64 { return e.sampleRate }
 // BlockSize is the default processing block in frames.
 func (e *Engine) BlockSize() int { return e.blockSize }
 
-// Mixer exposes the mix graph for wet/tune adjustments.
+// Mixer returns the underlying mixer instance.
 func (e *Engine) Mixer() *mixer.Mixer { return e.mix }
+
+// Err returns the first fatal error recorded during mixing or instrument processing.
+func (e *Engine) Err() error { return e.mix.Err() }
 
 // SetNoiseGateDB sets the per-voice noise-gate threshold in dBFS on every
 // sampler instrument: voice output below the threshold mutes to zero.
@@ -416,16 +423,14 @@ func (e *Engine) TrackPeak(i int) float32 {
 	return e.trackPeak[i]
 }
 
-// ProcessBlock renders one blockSize block, updating meters. The audio
-// is available via Mixer().Master() until the next call.
+// ProcessBlock renders one blockSize block, updating meters with zero allocations in steady state.
+// The audio is available via Mixer().Master() until the next call.
 func (e *Engine) ProcessBlock() {
 	e.ProcessFrames(e.blockSize, nil)
 }
 
-// ProcessFrames renders exactly n frames in sample-accurate sub-blocks
-// (splitting at note-event boundaries) and calls sink with each rendered
-// chunk of interleaved stereo audio. sink may be nil. The chunk slice is
-// only valid until the next call.
+// ProcessFrames renders exactly n frames in sample-accurate sub-blocks (splitting at note-event
+// boundaries) and calls sink with each rendered chunk, maintaining the zero-allocation steady-state loop invariant.
 func (e *Engine) ProcessFrames(n int, sink func(master []float32)) {
 	e.peakL, e.peakR = 0, 0
 	for i := range e.trackPeak {

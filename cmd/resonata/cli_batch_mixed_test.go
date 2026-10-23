@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestBatchMixedValidInvalid verifies batch rendering continues processing valid files when some files fail.
 func TestBatchMixedValidInvalid(t *testing.T) {
 	in := t.TempDir()
 	out := t.TempDir()

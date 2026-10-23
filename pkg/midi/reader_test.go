@@ -8,6 +8,7 @@ import (
 
 const assetPath = "../../test_data/mahler_symphony.mid"
 
+// TestReadVLQ verifies variable-length quantity decoding for 1, 2, 3, and 4-byte boundaries.
 func TestReadVLQ(t *testing.T) {
 	vectors := []struct {
 		bytes []byte
@@ -49,6 +50,7 @@ func TestReadVLQ(t *testing.T) {
 	}
 }
 
+// TestParseRunningStatus verifies MIDI running status reuse across consecutive channel events.
 func TestParseRunningStatus(t *testing.T) {
 	// on(60,100) @0, running on(62,100) @96, off(60) @192, running off(62).
 	data := []byte{
@@ -80,6 +82,7 @@ func TestParseRunningStatus(t *testing.T) {
 	}
 }
 
+// TestRunningStatusCancelledByMetaAndSysex verifies meta events and sysex cancel active running status.
 func TestRunningStatusCancelledByMetaAndSysex(t *testing.T) {
 	// After a meta event, a bare data byte must error (running status was
 	// cancelled), not panic or silently reuse the old status.
@@ -114,6 +117,7 @@ func TestRunningStatusCancelledByMetaAndSysex(t *testing.T) {
 	}
 }
 
+// TestReadFileAsset verifies reading and validating a complete SMF asset from disk.
 func TestReadFileAsset(t *testing.T) {
 	data, err := os.ReadFile(assetPath)
 	if err != nil {
@@ -199,6 +203,7 @@ func TestReadFileAsset(t *testing.T) {
 	}
 }
 
+// TestReadFileErrors verifies malformed SMF headers and truncated track chunks return proper errors.
 func TestReadFileErrors(t *testing.T) {
 	cases := map[string][]byte{
 		"empty":          {},
@@ -218,8 +223,7 @@ func TestReadFileErrors(t *testing.T) {
 	}
 }
 
-// TestReadFileNeverPanics mutates a valid file pseudorandomly; the parser
-// must return errors or results, never panic.
+// TestReadFileNeverPanics proves pseudorandom mutations of valid SMF files never cause unrecovered panics.
 func TestReadFileNeverPanics(t *testing.T) {
 	base, err := os.ReadFile(assetPath)
 	if err != nil {
@@ -257,6 +261,7 @@ func TestReadFileNeverPanics(t *testing.T) {
 	}
 }
 
+// TestCollectNotesEdges verifies pairing of NoteOn and NoteOff events and handles dangling notes.
 func TestCollectNotesEdges(t *testing.T) {
 	// vel-0 on = off; stray off ignored; LIFO on overlaps; open notes
 	// close at endTick.

@@ -30,8 +30,7 @@ func activePitches(s *Sampler) []int {
 	return out
 }
 
-// TestNotePolyphonyParsing inherits note_polyphony down the
-// global-group-region chain with region override winning.
+// TestNotePolyphonyParsing verifies note_polyphony opcode inheritance from group to region.
 func TestNotePolyphonyParsing(t *testing.T) {
 	f, err := ParseSFZ([]byte("<group>\nnote_polyphony=2\n<region>\nsample=a.wav\nkey=60\n<region>\nsample=b.wav\nkey=61\nnote_polyphony=1\n"))
 	if err != nil {
@@ -48,9 +47,7 @@ func TestNotePolyphonyParsing(t *testing.T) {
 	}
 }
 
-// TestNotePolyphonyLimit fades the oldest voice past a limit of one:
-// the second trigger steals nothing, frees the first over 10 ms, and
-// plays the new note fresh.
+// TestNotePolyphonyLimit verifies per-key voice limiting fades oldest voice when limit is exceeded.
 func TestNotePolyphonyLimit(t *testing.T) {
 	s := npSampler(1)
 	s.NoteOn(60, 0.9)
@@ -83,7 +80,7 @@ func TestNotePolyphonyLimit(t *testing.T) {
 	}
 }
 
-// TestNotePolyphonyTwo keeps two sounding and fades only the oldest.
+// TestNotePolyphonyTwo verifies note_polyphony=2 allows two concurrent voices before voice stealing.
 func TestNotePolyphonyTwo(t *testing.T) {
 	s := npSampler(2)
 	s.NoteOn(60, 0.9)
@@ -99,9 +96,7 @@ func TestNotePolyphonyTwo(t *testing.T) {
 	}
 }
 
-// TestNotePolyphonyUnlimited stacks four instances with no limit:
-// earlier takes fade (anti-chorus) but stay active until rendered,
-// so all four sound simultaneously.
+// TestNotePolyphonyUnlimited verifies unlimited note polyphony allows multiple concurrent voice layers.
 func TestNotePolyphonyUnlimited(t *testing.T) {
 	s := npSampler(0)
 	for k := 0; k < 4; k++ {
@@ -115,7 +110,7 @@ func TestNotePolyphonyUnlimited(t *testing.T) {
 	}
 }
 
-// TestAutoFadeUnlimited fades the old instance even with no limit.
+// TestAutoFadeUnlimited verifies fast autofade of duplicate note triggers even without polyphony limits.
 func TestAutoFadeUnlimited(t *testing.T) {
 	s := npSampler(0)
 	s.NoteOn(60, 0.9)
@@ -131,7 +126,7 @@ func TestAutoFadeUnlimited(t *testing.T) {
 	}
 }
 
-// TestAutoFadeDifferentPitch leaves other pitches alone.
+// TestAutoFadeDifferentPitch verifies triggering new pitch does not fade voices on other keys.
 func TestAutoFadeDifferentPitch(t *testing.T) {
 	s := npSampler(0)
 	s.NoteOn(60, 0.9)
@@ -144,8 +139,7 @@ func TestAutoFadeDifferentPitch(t *testing.T) {
 	}
 }
 
-// TestNotePolyphonyZeroAlloc hammers one pitch under a limit of one
-// with zero heap allocations across note-on, auto-fade, and tracking.
+// TestNotePolyphonyZeroAlloc proves polyphonic voice limiting performs zero heap allocations in hot path.
 func TestNotePolyphonyZeroAlloc(t *testing.T) {
 	s := npSampler(1)
 	if allocs := testing.AllocsPerRun(1000, func() {
@@ -155,9 +149,7 @@ func TestNotePolyphonyZeroAlloc(t *testing.T) {
 	}
 }
 
-// TestAutoFadeInterruptsLoopCrossfade retriggers a looping voice mid
-// seam: the auto-fade takes over, output stays smooth, and the old
-// voice frees while the new one sustains.
+// TestAutoFadeInterruptsLoopCrossfade verifies retriggering looping note interrupts active loop crossfade cleanly.
 func TestAutoFadeInterruptsLoopCrossfade(t *testing.T) {
 	s := loopTestSampler(t, 110, 8000, 0, 4910)
 	s.NoteOn(69, 1.0)

@@ -68,8 +68,7 @@ func equalSelections(a, b [][]string) bool {
 	return true
 }
 
-// TestRandTwoLayers checks complementary random windows both fire across
-// repeated triggers, and that the stream is deterministic per seed.
+// TestRandTwoLayers verifies complementary random trigger windows select expected sample layer.
 func TestRandTwoLayers(t *testing.T) {
 	mk := func() *Sampler {
 		s := New(testRate)
@@ -98,8 +97,7 @@ func TestRandTwoLayers(t *testing.T) {
 	}
 }
 
-// TestRandPointWindow checks a [0,0] window almost never fires: only an
-// exact 0.0 roll (probability 2^-24) admits it.
+// TestRandPointWindow verifies exact point random trigger windows fire only on boundary matches.
 func TestRandPointWindow(t *testing.T) {
 	s := New(testRate)
 	s.Load(&SFZFile{Regions: []Region{randRegion("pin.wav", 0, 0)}})
@@ -112,8 +110,7 @@ func TestRandPointWindow(t *testing.T) {
 	}
 }
 
-// TestRandBackwardCompat checks regions without random opcodes fire on
-// every trigger.
+// TestRandBackwardCompat verifies regions lacking random opcodes fire unconditionally on all triggers.
 func TestRandBackwardCompat(t *testing.T) {
 	s := New(testRate)
 	s.Load(&SFZFile{Regions: []Region{seqTestRegion("a.wav", 60, 60, 0, 127, 1, 1)}})
@@ -124,8 +121,7 @@ func TestRandBackwardCompat(t *testing.T) {
 	}
 }
 
-// TestLorandHirandParsing checks window parsing, inverted-range swap,
-// group inheritance, and malformed values.
+// TestLorandHirandParsing verifies lorand and hirand probability window parsing and validation.
 func TestLorandHirandParsing(t *testing.T) {
 	f, err := ParseSFZ([]byte("sample=a.wav key=60 lorand=0.8 hirand=0.2\n"))
 	if err != nil {
@@ -161,8 +157,7 @@ func TestLorandHirandParsing(t *testing.T) {
 	}
 }
 
-// TestRandSeqCycle checks round-robin cycling inside a fully overlapping
-// random-filtered set: eight triggers walk 1-2-3-4 twice.
+// TestRandSeqCycle verifies round-robin sequence cycling within active random probability layer.
 func TestRandSeqCycle(t *testing.T) {
 	mk := func(path string, pos int) Region {
 		r := seqTestRegion(path, 60, 60, 0, 127, 4, pos)
@@ -183,7 +178,7 @@ func TestRandSeqCycle(t *testing.T) {
 	}
 }
 
-// TestRandZeroAlloc checks a thousand filtered triggers allocate nothing.
+// TestRandZeroAlloc proves random sample layer selection performs zero heap allocations.
 func TestRandZeroAlloc(t *testing.T) {
 	s := New(testRate)
 	s.Load(&SFZFile{Regions: []Region{

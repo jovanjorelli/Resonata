@@ -163,6 +163,7 @@ type failSeeker struct{ *os.File }
 
 func (f failSeeker) Seek(int64, int) (int64, error) { return 0, errors.New("seek boom") }
 
+// TestPushWriterPatchError verifies WAV writer reports errors when seeking fails during header patch-up.
 func TestPushWriterPatchError(t *testing.T) {
 	f, err := os.Create(filepath.Join(t.TempDir(), "p.wav"))
 	if err != nil {
@@ -233,4 +234,29 @@ func TestPushWriterBigBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.Close()
+}
+
+// TestDecodeLargeChunkBounded verifies data chunk decoding does not allocate beyond actual available stream data.
+func TestDecodeLargeChunkBounded(t *testing.T) {
+	raw := []byte("RIFF\x30\x00\x00\x00WAVE" +
+		"fmt \x10\x00\x00\x00\x01\x00\x01\x00\x40\x1f\x00\x00\x80\x3e\x00\x00\x02\x00\x10\x00" +
+		"data\xff\xff\xff\x7f\x00\x00\x00\x00")
+	p := pushWrite(t, "huge_data.wav", raw)
+	info, samples, err := DecodeFile(p)
+	if err != nil {
+		t.Fatalf("decode failed: %v", err)
+	}
+	if info.Frames != 2 || len(samples) != 2 {
+		t.Fatalf("frames = %d, samples = %d, want 2", info.Frames, len(samples))
+	}
+}
+
+// TestDecodeTooManyChannels verifies channel counts exceeding maximum supported limit (>256) are rejected.
+func TestDecodeTooManyChannels(t *testing.T) {
+	raw := []byte("RIFF\x24\x00\x00\x00WAVE" +
+		"fmt \x10\x00\x00\x00\x01\x00\x01\x01\x40\x1f\x00\x00\x80\x3e\x00\x00\x02\x00\x10\x00")
+	p := pushWrite(t, "many_ch.wav", raw)
+	if _, _, err := DecodeFile(p); err == nil {
+		t.Fatal("expected >256 channels to be rejected")
+	}
 }

@@ -29,9 +29,7 @@ func gridScore(n int, offsetBeats float64, vel float32, artic string) *score.Sco
 	return s
 }
 
-// TestHumanizeDistribution is the statistical proof: onset jitter is
-// Gaussian with the specified sigma, clamped, and downbeats stay locked
-// at exactly 0.0 ms deviation.
+// TestHumanizeDistribution proves humanization timing and velocity perturbations match zero-mean Gaussian distribution bounds.
 func TestHumanizeDistribution(t *testing.T) {
 	const n = 20000
 	in := gridScore(n, 0.5, 0.8, "") // off-beat grid: every note gets jitter
@@ -104,8 +102,7 @@ func TestHumanizeDistribution(t *testing.T) {
 	}
 }
 
-// TestHumanizeMetricVelocity checks the 4/4 accent table, the ±5%
-// jitter, and that strength 0 is an exact pass-through.
+// TestHumanizeMetricVelocity verifies metric accent velocity multipliers applied to downbeats and strong beats in 4/4 time.
 func TestHumanizeMetricVelocity(t *testing.T) {
 	const bars = 400
 	in := &score.Score{
@@ -151,7 +148,7 @@ func TestHumanizeMetricVelocity(t *testing.T) {
 	}
 }
 
-// TestHumanizeDurations checks the articulation-driven duration rules.
+// TestHumanizeDurations verifies articulation modifiers (staccato, legato, tenuto) scale note gate durations.
 func TestHumanizeDurations(t *testing.T) {
 	stats := func(artic string, base float64) (mean, sd, lo, hi float64) {
 		in := gridScore(600, 0.5, 0.8, artic)
@@ -208,8 +205,7 @@ func TestHumanizeDurations(t *testing.T) {
 	}
 }
 
-// TestHumanizeDeterminism checks reproducibility, input immutability,
-// per-track independence, and output validity.
+// TestHumanizeDeterminism verifies deterministic humanization produces identical output for a given fixed random seed.
 func TestHumanizeDeterminism(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 90, TimeSignature: "3/4"},
@@ -291,8 +287,7 @@ func TestHumanizeDeterminism(t *testing.T) {
 	}
 }
 
-// TestHumanizePRNG checks the generator statistically and proves the
-// hot path allocates nothing.
+// TestHumanizePRNG verifies custom pseudo-random number generator uniform distribution and period properties.
 func TestHumanizePRNG(t *testing.T) {
 	r := newHumanRNG(1)
 	const n = 40000
@@ -329,6 +324,7 @@ func TestHumanizePRNG(t *testing.T) {
 	}
 }
 
+// TestBeatsPerBar verifies time signature parsing extracts beats per bar for humanization accents.
 func TestBeatsPerBar(t *testing.T) {
 	for sig, want := range map[string]int{"4/4": 4, "3/4": 3, "6/8": 6, "2/2": 2, "": 4, "junk": 4, "0/4": 4} {
 		if got := BeatsPerBar(sig); got != want {

@@ -21,6 +21,7 @@ func assetFile(t *testing.T) *File {
 	return f
 }
 
+// TestToScoreFromAsset verifies SMF asset parsing and conversion to a valid Resonata score model.
 func TestToScoreFromAsset(t *testing.T) {
 	s, err := ToScore(assetFile(t))
 	if err != nil {
@@ -89,6 +90,7 @@ func TestToScoreFromAsset(t *testing.T) {
 	}
 }
 
+// TestFromScoreStructure verifies MIDI file construction from score tracks, tempo, and time signature.
 func TestFromScoreStructure(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "Struct Test", BPM: 90, TimeSignature: "3/4"},
@@ -153,8 +155,7 @@ func TestFromScoreStructure(t *testing.T) {
 	}
 }
 
-// TestScoreRoundTrip is the JSON->MIDI->JSON exactness contract: pitches
-// and velocities identical, timings within float tolerance.
+// TestScoreRoundTrip verifies JSON->MIDI->JSON exactness contract preserving note pitches, timing, and velocities.
 func TestScoreRoundTrip(t *testing.T) {
 	orig, err := ToScore(assetFile(t))
 	if err != nil {
@@ -209,6 +210,7 @@ func TestScoreRoundTrip(t *testing.T) {
 	}
 }
 
+// TestTempoMapMultiSegment verifies multi-segment tempo map integration and absolute tick-to-second timing conversion.
 func TestTempoMapMultiSegment(t *testing.T) {
 	// 480 PPQ: bar 1 at 60 BPM (1 s/beat), then 120 BPM from tick 1920.
 	f := &File{
@@ -242,6 +244,7 @@ func TestTempoMapMultiSegment(t *testing.T) {
 	}
 }
 
+// TestGMProgramNames verifies General MIDI program number to family name mappings.
 func TestGMProgramNames(t *testing.T) {
 	if GMProgramNames[0] != "Acoustic Grand Piano" {
 		t.Errorf("program 0 = %q", GMProgramNames[0])
@@ -257,6 +260,7 @@ func TestGMProgramNames(t *testing.T) {
 	}
 }
 
+// TestMicrosFromBPM verifies BPM to microseconds-per-quarter conversion formula.
 func TestMicrosFromBPM(t *testing.T) {
 	if mpq := MicrosFromBPM(120); mpq != 500000 {
 		t.Errorf("120 BPM = %d µs", mpq)

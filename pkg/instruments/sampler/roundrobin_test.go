@@ -43,8 +43,7 @@ func equalPaths(a, b []string) bool {
 	return true
 }
 
-// TestSeqRoundRobinCycle checks a four-step group cycles 1-2-3-4 and
-// wraps back to 1 on the fifth trigger.
+// TestSeqRoundRobinCycle verifies round-robin sequence cycling across seq_length steps.
 func TestSeqRoundRobinCycle(t *testing.T) {
 	regions := []Region{
 		seqTestRegion("s1.wav", 60, 60, 0, 127, 4, 1),
@@ -69,8 +68,7 @@ func TestSeqRoundRobinCycle(t *testing.T) {
 	}
 }
 
-// TestSeqPerKeyIndependence checks interleaved notes cycle on their own
-// counters: the second C4 selects position 2, not position 3.
+// TestSeqPerKeyIndependence verifies independent per-key round-robin step counters.
 func TestSeqPerKeyIndependence(t *testing.T) {
 	regions := []Region{
 		seqTestRegion("c1.wav", 60, 60, 0, 127, 4, 1),
@@ -95,9 +93,7 @@ func TestSeqPerKeyIndependence(t *testing.T) {
 	}
 }
 
-// TestSeqSingleMatchNoAdvance checks a lone matched member of a sequence
-// group plays through without moving the counter: a later fully-matched
-// trigger still starts at position 1.
+// TestSeqSingleMatchNoAdvance verifies lone round-robin region fires without step advancement.
 func TestSeqSingleMatchNoAdvance(t *testing.T) {
 	regions := []Region{
 		seqTestRegion("a.wav", 60, 60, 0, 100, 2, 1),
@@ -115,8 +111,7 @@ func TestSeqSingleMatchNoAdvance(t *testing.T) {
 	}
 }
 
-// TestSeqLegacyPassthrough checks regions without sequence opcodes fire
-// together on every trigger, preserving pre-round-robin behavior.
+// TestSeqLegacyPassthrough verifies regions without sequence opcodes fire unconditionally.
 func TestSeqLegacyPassthrough(t *testing.T) {
 	mk := func(path string) Region {
 		r := seqTestRegion(path, 60, 60, 0, 127, 1, 1)
@@ -138,8 +133,7 @@ func TestSeqLegacyPassthrough(t *testing.T) {
 	}
 }
 
-// TestSeqParsing checks seq_length/seq_position parsing, group-level
-// inheritance, defaults, and malformed values.
+// TestSeqParsing verifies seq_length and seq_position opcode parsing and validation.
 func TestSeqParsing(t *testing.T) {
 	f, err := ParseSFZ([]byte("<group>\nseq_length=4\n" +
 		"<region>\nsample=a.wav key=60 seq_position=1\n" +
@@ -179,7 +173,7 @@ func TestSeqParsing(t *testing.T) {
 	}
 }
 
-// TestSeqReset checks Load restarts every per-key counter at position 1.
+// TestSeqReset verifies resetting per-key round-robin counters on library reload.
 func TestSeqReset(t *testing.T) {
 	regions := []Region{
 		seqTestRegion("s1.wav", 60, 60, 0, 127, 2, 1),
@@ -205,8 +199,7 @@ func TestSeqReset(t *testing.T) {
 	}
 }
 
-// TestSeqZeroAlloc checks a thousand round-robin triggers allocate
-// nothing on the heap.
+// TestSeqZeroAlloc proves round-robin voice triggering performs zero heap allocations.
 func TestSeqZeroAlloc(t *testing.T) {
 	regions := []Region{
 		seqTestRegion("s1.wav", 60, 60, 0, 127, 4, 1),

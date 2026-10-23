@@ -53,8 +53,8 @@ const (
 var guidTail = []byte{0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71}
 
 // channelMask returns the speaker bitmask for n channels: mono maps to
-// front-center, stereo to front-left/right, larger layouts to the
-// standard surround masks with a low-bits fallback.
+// front-center, stereo to front-left/right, and 8 channels to the
+// standard 7.1 Surround mask (0x63F). Larger layouts fall back to low bits.
 func channelMask(channels int) uint32 {
 	switch channels {
 	case 1:
@@ -62,13 +62,15 @@ func channelMask(channels int) uint32 {
 	case 2:
 		return speakerFrontLeft | speakerFrontRight
 	case 3:
-		return 0x7 // FL FR FC
+		return 0x7
 	case 4:
-		return 0x33 // FL FR BL BR (quad)
+		return 0x33
 	case 5:
-		return 0x37 // FL FR FC BL BR
+		return 0x37
 	case 6:
-		return 0x3F // 5.1: FL FR FC LFE BL BR
+		return 0x3F
+	case 8:
+		return 0x63F
 	}
 	if channels >= 32 {
 		return 0xFFFFFFFF
@@ -211,10 +213,8 @@ func (wr *Writer) writeHeader() error {
 	return err
 }
 
-// WriteFrames writes one block of audio, one float32 slice per channel.
-// The longest slice defines the frame count and missing samples are
-// written as silence; passing more slices than configured channels is an
-// error. It returns the number of frames written.
+// WriteFrames writes one block of audio (one float32 slice in linear range [-1, 1] per channel)
+// into the RIFF WAVE data chunk using pre-allocated scratch buffers. It returns the number of frames written.
 func (wr *Writer) WriteFrames(chans ...[]float32) (int, error) {
 	if wr.closed {
 		return 0, errors.New("wav: write after Close")

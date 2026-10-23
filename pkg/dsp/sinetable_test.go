@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-// TestSineTableAccuracy bounds the lookup error across the circle,
-// including negative and multi-cycle phases that must wrap.
+// TestSineTableAccuracy verifies 2048-entry interpolated sine table maintains peak approximation error below 1.2e-6.
 func TestSineTableAccuracy(t *testing.T) {
 	peak := 0.0
 	for i := -4096; i <= 8192; i++ {
@@ -22,8 +21,7 @@ func TestSineTableAccuracy(t *testing.T) {
 	}
 }
 
-// TestSineOscillatorTracksMathSin checks the oscillator still follows a
-// true sine after the table conversion.
+// TestSineOscillatorTracksMathSin verifies table-driven oscillator tracks math.Sin reference across full 2π radian cycle.
 func TestSineOscillatorTracksMathSin(t *testing.T) {
 	osc := NewSine()
 	osc.SetFrequency(440, 48000)

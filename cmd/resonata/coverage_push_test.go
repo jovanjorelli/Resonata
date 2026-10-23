@@ -23,6 +23,7 @@ func writePushScore(t *testing.T, dir, name string) string {
 	return p
 }
 
+// TestPushRenderEmptyModeDefaultsOffline verifies empty render mode string defaults to offline mode.
 func TestPushRenderEmptyModeDefaultsOffline(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "o.wav")
 	cfg := &CLIConfig{RenderMode: "", BitDepth: "24", Channels: 2, SampleRate: 48000,
@@ -36,6 +37,7 @@ func TestPushRenderEmptyModeDefaultsOffline(t *testing.T) {
 	}
 }
 
+// TestPushRenderEmptyOutputDefaults verifies empty output path defaults to out.wav in current directory.
 func TestPushRenderEmptyOutputDefaults(t *testing.T) {
 	dir := t.TempDir()
 	cwd, err := os.Getwd()
@@ -64,6 +66,7 @@ func TestPushRenderEmptyOutputDefaults(t *testing.T) {
 	}
 }
 
+// TestPushRenderCreateError verifies handling output WAV file creation errors.
 func TestPushRenderCreateError(t *testing.T) {
 	cfg := &CLIConfig{RenderMode: "offline", BitDepth: "24", Channels: 2, SampleRate: 48000,
 		OutputPath: filepath.Join(t.TempDir(), "no-such-dir", "o.wav"), ReverbPreset: "none"}
@@ -72,6 +75,7 @@ func TestPushRenderCreateError(t *testing.T) {
 	}
 }
 
+// TestPushRenderEngineError verifies handling engine initialization errors.
 func TestPushRenderEngineError(t *testing.T) {
 	empty := minimalScore()
 	empty.Tracks = nil
@@ -82,6 +86,7 @@ func TestPushRenderEngineError(t *testing.T) {
 	}
 }
 
+// TestPushRenderMonoNoProgress verifies rendering mono output without progress indicator bar.
 func TestPushRenderMonoNoProgress(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "mono.wav")
 	cfg := &CLIConfig{RenderMode: "stream", BitDepth: "16", Channels: 1, SampleRate: 48000,
@@ -95,6 +100,7 @@ func TestPushRenderMonoNoProgress(t *testing.T) {
 	}
 }
 
+// TestPushLoadScoreVerbose verifies verbose log output during score loading.
 func TestPushLoadScoreVerbose(t *testing.T) {
 	p := writePushScore(t, t.TempDir(), "s.json")
 	s, err := loadScore(&CLIConfig{ScorePath: p, Verbose: true})
@@ -106,6 +112,7 @@ func TestPushLoadScoreVerbose(t *testing.T) {
 	}
 }
 
+// TestPushLoadScoreExportJSONBadPath verifies error reporting when exporting JSON score to unwritable path.
 func TestPushLoadScoreExportJSONBadPath(t *testing.T) {
 	cfg := &CLIConfig{ImportMIDI: "../../test_data/mahler_symphony.mid",
 		ExportJSON: filepath.Join(t.TempDir(), "no-such-dir", "out.json")}
@@ -114,6 +121,7 @@ func TestPushLoadScoreExportJSONBadPath(t *testing.T) {
 	}
 }
 
+// TestPushLoadScoreMIDIValidateError verifies validation errors on imported MIDI scores.
 func TestPushLoadScoreMIDIValidateError(t *testing.T) {
 	dir := t.TempDir()
 	bad := filepath.Join(dir, "empty.mid")
@@ -125,24 +133,28 @@ func TestPushLoadScoreMIDIValidateError(t *testing.T) {
 	}
 }
 
+// TestPushInspectSFZMissing verifies error reporting when inspecting non-existent SFZ path.
 func TestPushInspectSFZMissing(t *testing.T) {
 	if err := inspectSFZ(filepath.Join(t.TempDir(), "missing.sfz"), false); err == nil {
 		t.Fatal("missing sfz accepted")
 	}
 }
 
+// TestPushExportMIDIWriteError verifies error reporting when exporting MIDI to invalid path.
 func TestPushExportMIDIWriteError(t *testing.T) {
 	if err := exportMIDIFile(minimalScore(), filepath.Join(t.TempDir(), "no-such-dir", "o.mid")); err == nil {
 		t.Fatal("bad midi output accepted")
 	}
 }
 
+// TestPushImportMIDIBatchMissing verifies handling missing MIDI files in batch mode.
 func TestPushImportMIDIBatchMissing(t *testing.T) {
 	if _, err := importMIDIScoreForBatch(filepath.Join(t.TempDir(), "missing.mid")); err == nil {
 		t.Fatal("missing batch midi accepted")
 	}
 }
 
+// TestPushApplyReverbEmptyKeepsDefault verifies empty reverb preset name retains default space.
 func TestPushApplyReverbEmptyKeepsDefault(t *testing.T) {
 	eng, err := engine.New(minimalScore(), 48000, engine.DefaultBlockSize)
 	if err != nil {
@@ -155,12 +167,14 @@ func TestPushApplyReverbEmptyKeepsDefault(t *testing.T) {
 	}
 }
 
+// TestPushBatchBadDir verifies batch processing fails gracefully on unreadable directory.
 func TestPushBatchBadDir(t *testing.T) {
 	if err := runBatch(&CLIConfig{BatchDir: filepath.Join(t.TempDir(), "no-such-dir")}); err == nil {
 		t.Fatal("bad batch dir accepted")
 	}
 }
 
+// TestPushBatchSubdirSkippedVerbose verifies batch directory scanning skips subdirectories with verbose logging.
 func TestPushBatchSubdirSkippedVerbose(t *testing.T) {
 	dir := t.TempDir()
 	writePushScore(t, dir, "a.json")
@@ -178,6 +192,7 @@ func TestPushBatchSubdirSkippedVerbose(t *testing.T) {
 	}
 }
 
+// TestPushBatchMIDIImportError verifies batch processing reports error on corrupted MIDI file.
 func TestPushBatchMIDIImportError(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "bad.mid"), []byte("not a midi file"), 0o644); err != nil {
@@ -188,6 +203,7 @@ func TestPushBatchMIDIImportError(t *testing.T) {
 	}
 }
 
+// TestPushBatchHumanize verifies humanization parameter application during batch renders.
 func TestPushBatchHumanize(t *testing.T) {
 	dir := t.TempDir()
 	writePushScore(t, dir, "h.json")
@@ -198,6 +214,7 @@ func TestPushBatchHumanize(t *testing.T) {
 	}
 }
 
+// TestPushProfileErrors verifies error handling on invalid CPU or memory profile paths.
 func TestPushProfileErrors(t *testing.T) {
 	bad := filepath.Join(t.TempDir(), "no-such-dir", "cpu.prof")
 	if err := startCPUProfile(bad); err == nil {

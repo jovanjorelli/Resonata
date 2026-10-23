@@ -111,7 +111,7 @@ gets its own voice with its own gain; short pools drop the quietest
 layers first. Probability filters first and can mute a layer;
 round-robin resolves one take per layer from the shared per-key step.
 
-### Loop behavior
+### Loop behavior and memory isolation
 
 `loop_mode` (`no_loop`, `loop_continuous`, `one_shot`;
 `one_shot` ignores note-off), `loop_start` / `loop_end` (samples,
@@ -120,6 +120,11 @@ source frames (~8 ms) as an equal-power crossfade between the outgoing
 tail and an incoming stream from the loop start. Loops shorter than
 384 frames use a hard wrap.
 
+When an SFZ region overrides `loop_start` or `loop_end`, Resonata
+automatically clones the shared `*SampleData` structure before applying
+the new points. This ensures independent regions sharing the same audio
+file do not overwrite each other's loop boundaries.
+
 ```sfz
 <group>
 loop_mode=loop_continuous
@@ -127,14 +132,21 @@ loop_mode=loop_continuous
 sample=cello_c3.wav lokey=36 hikey=48 pitch_keycenter=48 loop_start=800 loop_end=43000
 ```
 
-### Voice management
+### Voice management and stealing hierarchy
 
-16 voices per sampler. Pool exhaustion steals the oldest voice with a
-240-frame (~5 ms) fade into the pending note. Same-pitch predecessors
-fade over 480 frames (~10 ms) and free instead. `off_by` exclusive
-groups ride the 10 ms fade path. `polyphony` and `trigger` are stored;
-`sw_lokey` / `sw_hikey` / `sw_default` / `sw_last` / `sw_down` /
-`sw_up` keyswitches are stored but do not switch articulations.
+Each sampler instance maintains a pool of 16 voices. When polyphony
+is exhausted, `allocVoice` executes a hierarchical priority search to
+avoid dropping queued notes:
+1. Releasing voices that are not actively undergoing a steal fade
+   (`!v.isStealing`), selecting the oldest release time.
+2. Active voices fading to silence without a pending note (`v.stealFree`).
+3. Sounding voices, fading the oldest voice over 240 frames (~5 ms)
+   into the pending note.
+4. Oldest overall sounding voice.
+
+Same-pitch predecessors fade over 480 frames (~10 ms) and free.
+`off_by` exclusive groups take the 10 ms fade path. Sustained notes
+under CC64 defer their release phase until pedal release (`pedalHeld`).
 
 ## Loading real-world libraries
 
@@ -160,9 +172,10 @@ A bundled Windows-authored fixture exercises every loader feature:
 ./bin/resonata --load-sfz=samples/windows_authored_library/main.sfz --score=examples/test.json --output=out.wav
 ```
 
-`#include` directives expand recursively with cycle detection; quoted
-and unquoted paths work; separators normalize; lookups share the
-case-insensitive cache.
+- `#include` directives expand recursively with cycle detection.
+- Paths are normalized: Windows drive letters (`C:`) are stripped on Unix, and backslashes become forward slashes.
+- Canonical symlink evaluation anchors all relative lookups within the instrument root directory, rejecting path traversal attempts.
+- Lookups share a case-insensitive resolution cache protected by lock-free `atomic.Uint64` counters for high concurrency.
 
 ## WAV file requirements
 
@@ -173,11 +186,13 @@ WAV `smpl` chunk, overridable per region.
 
 ## Troubleshooting
 
-Sample not found: verify casing, use forward slashes, run with
-`--verbose` to see the sanitized path. Clicks at note boundaries:
-raise `ampeg_release` (50-200 ms); the fallback envelope uses 200 ms.
-Memory exhaustion: samples decode fully on first use, so prefer one
-SFZ per instrument. Include cycles abort naming the repeated file.
+- **Sample not found**: verify casing, use forward slashes, run with
+  `--verbose` to see the sanitized path.
+- **Clicks at note boundaries**: raise `ampeg_release` (50–200 ms); the
+  fallback envelope uses 200 ms.
+- **Memory exhaustion**: samples decode fully on first use; prefer one
+  SFZ per instrument strip.
+- **Include cycles**: recursive cycles abort immediately naming the repeated file.
 
 ## Reference
 

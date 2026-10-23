@@ -60,6 +60,7 @@ func abs32(v float32) float32 {
 	return v
 }
 
+// TestSamplerNoteOnOff verifies note-on voice activation and note-off release lifecycle.
 func TestSamplerNoteOnOff(t *testing.T) {
 	s, _ := newTestSampler(t)
 	if s.ActiveVoices() != 0 {
@@ -91,6 +92,7 @@ func TestSamplerNoteOnOff(t *testing.T) {
 	}
 }
 
+// TestSamplerPitchShift verifies playback speed ratio calculation for chromatic pitch transposition.
 func TestSamplerPitchShift(t *testing.T) {
 	s, _ := newTestSampler(t)
 	// +12 semitones doubles the playback rate: 880 Hz.
@@ -108,6 +110,7 @@ func TestSamplerPitchShift(t *testing.T) {
 	}
 }
 
+// TestSamplerVelocityAndVolume verifies MIDI velocity dynamic scaling and volume attenuation.
 func TestSamplerVelocityAndVolume(t *testing.T) {
 	s1, _ := newTestSampler(t)
 	s1.NoteOn(69, 1.0)
@@ -129,6 +132,7 @@ func TestSamplerVelocityAndVolume(t *testing.T) {
 	}
 }
 
+// TestSamplerPan verifies stereo pan position attenuates left and right channel gains.
 func TestSamplerPan(t *testing.T) {
 	render := func(pan float32) (lpeak, rpeak float32) {
 		s, f := newTestSampler(t)
@@ -158,6 +162,7 @@ func TestSamplerPan(t *testing.T) {
 	}
 }
 
+// TestSamplerPolyphony verifies concurrent voice rendering up to max polyphony limit.
 func TestSamplerPolyphony(t *testing.T) {
 	s, _ := newTestSampler(t)
 	s.NoteOn(60, 0.8)
@@ -188,6 +193,7 @@ func TestSamplerPolyphony(t *testing.T) {
 	}
 }
 
+// TestVoiceStealing verifies oldest sounding voice stealing when voice pool polyphony is exhausted.
 func TestVoiceStealing(t *testing.T) {
 	s, _ := newTestSampler(t)
 	// Fill all 16 voices, advancing the clock between notes.
@@ -220,6 +226,7 @@ func TestVoiceStealing(t *testing.T) {
 	}
 }
 
+// TestLooping verifies continuous sample loop playback between loop start and loop end markers.
 func TestLooping(t *testing.T) {
 	s, f := newTestSampler(t)
 	f.Regions[0].LoopMode = LoopContinuous
@@ -240,6 +247,7 @@ func TestLooping(t *testing.T) {
 	}
 }
 
+// TestOneShotIgnoresNoteOff verifies one-shot sample regions ignore note-off events and play to completion.
 func TestOneShotIgnoresNoteOff(t *testing.T) {
 	s, f := newTestSampler(t)
 	f.Regions[0].LoopMode = LoopOneShot
@@ -256,6 +264,7 @@ func TestOneShotIgnoresNoteOff(t *testing.T) {
 	}
 }
 
+// TestSampleRateConversion verifies resampling ratio adapts when sample rate differs from file rate.
 func TestSampleRateConversion(t *testing.T) {
 	// The same 440 Hz sine stored at 24 kHz: at pitch 69 the rate is
 	// 24000/48000 = 0.5, so the output stays 440 Hz.
@@ -286,6 +295,7 @@ func TestSampleRateConversion(t *testing.T) {
 	}
 }
 
+// TestVoiceProcessZeroFill verifies silence zero-filling when voice releases or sample completes.
 func TestVoiceProcessZeroFill(t *testing.T) {
 	// A 100-frame constant sample rendered into a 256-frame buffer must
 	// deactivate the voice and zero the untouched tail.
@@ -321,6 +331,7 @@ func TestVoiceProcessZeroFill(t *testing.T) {
 	}
 }
 
+// TestSamplerSetParameters verifies runtime parameter adjustments and noise gate threshold configuration.
 func TestSamplerSetParameters(t *testing.T) {
 	s, _ := newTestSampler(t)
 	s.SetParameters(map[string]float32{"master_volume": 0})
@@ -352,6 +363,7 @@ func TestSamplerSetParameters(t *testing.T) {
 	s.SetParameters(nil)
 }
 
+// TestSamplerZeroAlloc proves steady-state sampler voice rendering performs zero heap allocations.
 func TestSamplerZeroAlloc(t *testing.T) {
 	s, _ := newTestSampler(t)
 	s.NoteOn(69, 0.9)

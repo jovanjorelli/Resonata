@@ -246,10 +246,9 @@ func (d *StereoDelay) Reset() {
 	d.dampStateR = 0
 }
 
-// ProcessFrameWet runs one stereo frame through the echo and returns the
-// wet signal only (send/return style, as used by the mixer). The tap is
-// read, warmed by the 1-pole damper, crossed through the feedback matrix
-// in ping-pong mode, and written back with fresh input:
+// ProcessFrameWet runs one stereo frame through the echo and returns the wet signal only
+// (send/return style), applying 1-pole damping with anti-denormal flush to zero (< 1e-25)
+// and feedback matrixing (stereo or ping-pong):
 //
 //	stereo:    writeL = inL + dampL*fb, writeR = inR + dampR*fb
 //	ping-pong: writeL = inL + dampR*fb, writeR = inR + dampL*fb
@@ -257,16 +256,33 @@ func (d *StereoDelay) ProcessFrameWet(inL, inR float32) (float32, float32) {
 	if d.lengthSamples <= 0 {
 		return 0, 0
 	}
+	if math.IsNaN(float64(inL)) || math.IsInf(float64(inL), 0) {
+		inL = 0
+	}
+	if math.IsNaN(float64(inR)) || math.IsInf(float64(inR), 0) {
+		inR = 0
+	}
 	readIdx := (d.writeIdx - d.lengthSamples) & d.mask
 	rawL := d.bufferL[readIdx]
 	rawR := d.bufferR[readIdx]
+	if math.IsNaN(float64(rawL)) || math.IsInf(float64(rawL), 0) {
+		rawL = 0
+	}
+	if math.IsNaN(float64(rawR)) || math.IsInf(float64(rawR), 0) {
+		rawR = 0
+	}
 
-	// Analog warmth: 1-pole lowpass per tap.
-	// y = (1-alpha)*x + alpha*yPrev.
 	oneMinus := 1 - d.dampCoeff
-	d.dampStateL = oneMinus*rawL + d.dampCoeff*d.dampStateL
-	d.dampStateR = oneMinus*rawR + d.dampCoeff*d.dampStateR
-	wetL, wetR := d.dampStateL, d.dampStateR
+	stateL := oneMinus*rawL + d.dampCoeff*d.dampStateL
+	stateR := oneMinus*rawR + d.dampCoeff*d.dampStateR
+	if math.IsNaN(float64(stateL)) || math.IsInf(float64(stateL), 0) || math.Abs(float64(stateL)) < 1e-25 {
+		stateL = 0
+	}
+	if math.IsNaN(float64(stateR)) || math.IsInf(float64(stateR), 0) || math.Abs(float64(stateR)) < 1e-25 {
+		stateR = 0
+	}
+	d.dampStateL, d.dampStateR = stateL, stateR
+	wetL, wetR := stateL, stateR
 
 	if d.mode == DelayModePingPong {
 		d.bufferL[d.writeIdx] = inL + wetR*d.feedback
@@ -279,16 +295,17 @@ func (d *StereoDelay) ProcessFrameWet(inL, inR float32) (float32, float32) {
 	return wetL, wetR
 }
 
-// ProcessFrame returns one frame of the wet/dry mix:
-//
-//	out = (1-wet)*dry + wet*delayOut
+// ProcessFrame processes a single stereo input frame (inL, inR in linear amplitude) through the delay line,
+// applying feedback, ping-pong cross-routing, anti-denormal flush (< 1e-25), and linear wet/dry blend [0, 1].
 func (d *StereoDelay) ProcessFrame(inL, inR float32) (float32, float32) {
+	if d.lengthSamples <= 0 {
+		return inL, inR
+	}
 	wetL, wetR := d.ProcessFrameWet(inL, inR)
 	return inL*(1-d.wet) + wetL*d.wet, inR*(1-d.wet) + wetR*d.wet
 }
 
-// ProcessStereo processes a planar stereo buffer in place with the
-// wet/dry mix.
+// ProcessStereo processes a planar stereo buffer in place with the wet/dry mix through the delay line with zero allocations.
 func (d *StereoDelay) ProcessStereo(buf *StereoBuffer) {
 	if buf == nil {
 		return

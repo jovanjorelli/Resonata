@@ -106,9 +106,22 @@ func Decode(r io.ReadSeeker) (Info, []float32, error) {
 				return info, nil, err
 			}
 		}
-		if size%2 == 1 { // chunks are word-aligned
-			if err := skip(r, 1); err != nil {
-				return info, nil, err
+		if size%2 == 1 {
+			curr, errPos := r.Seek(0, io.SeekCurrent)
+			end, errEnd := r.Seek(0, io.SeekEnd)
+			if errPos == nil && errEnd == nil {
+				if curr < end {
+					if _, err := r.Seek(curr, io.SeekStart); err != nil {
+						return info, nil, err
+					}
+					if err := skip(r, 1); err != nil {
+						return info, nil, err
+					}
+				}
+			} else {
+				if err := skip(r, 1); err != nil {
+					return info, nil, err
+				}
 			}
 		}
 	}
@@ -146,10 +159,12 @@ func parseExtensible(r io.ReadSeeker, info *Info, rest *int64) error {
 	default:
 		return fmt.Errorf("wav: unsupported extensible subformat %d", sub)
 	}
-	if validBits <= 0 {
-		return errors.New("wav: extensible valid bits must be positive")
+	if validBits <= 0 || validBits > info.BitsPerSample {
+		return errors.New("wav: extensible invalid valid bits per sample")
 	}
-	info.BitsPerSample = validBits
+	if info.BitsPerSample == 24 {
+		info.BitsPerSample = validBits
+	}
 	return nil
 }
 
@@ -171,20 +186,37 @@ func validateFmt(info Info) error {
 	default:
 		return fmt.Errorf("wav: unsupported format tag %d (want 1 or 3)", uint16(info.FormatTag))
 	}
-	if info.Channels <= 0 || info.SampleRate <= 0 {
+	if info.Channels <= 0 || info.Channels > 256 || info.SampleRate <= 0 {
 		return errors.New("wav: invalid channel count or sample rate")
 	}
 	return nil
 }
 
-// decodeData reads the data chunk and converts it to interleaved float32.
-// A truncated chunk yields the frames actually present.
 func decodeData(r io.ReadSeeker, info Info, size int64) ([]float32, int, error) {
 	blockAlign := info.Channels * info.BitsPerSample / 8
 	if blockAlign <= 0 {
 		return nil, 0, errors.New("wav: invalid block alignment")
 	}
-	frames := int(size / int64(blockAlign))
+	currentPos, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return nil, 0, err
+	}
+	endPos, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, 0, err
+	}
+	if _, err := r.Seek(currentPos, io.SeekStart); err != nil {
+		return nil, 0, err
+	}
+	avail := endPos - currentPos
+	chunkDataSize := size
+	if chunkDataSize > avail {
+		chunkDataSize = avail
+	}
+	if chunkDataSize < 0 {
+		return nil, 0, errors.New("wav: invalid data size")
+	}
+	frames := int(chunkDataSize / int64(blockAlign))
 	raw := make([]byte, frames*blockAlign)
 	n, err := io.ReadFull(r, raw)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && err != io.EOF {
@@ -193,6 +225,10 @@ func decodeData(r io.ReadSeeker, info Info, size int64) ([]float32, int, error) 
 	frames = n / blockAlign
 	raw = raw[:frames*blockAlign]
 	out := make([]float32, frames*info.Channels)
+
+	if _, err := r.Seek(currentPos+chunkDataSize, io.SeekStart); err != nil {
+		return nil, 0, fmt.Errorf("wav: seeking to end of data chunk: %w", err)
+	}
 
 	switch {
 	case info.FormatTag == Float32 && info.BitsPerSample == 32:

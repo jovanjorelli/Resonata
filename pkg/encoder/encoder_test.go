@@ -8,6 +8,7 @@ import (
 	"resonata/pkg/wav"
 )
 
+// TestResolveMatrix verifies the format, bits, channels, and sample rate resolution for supported WAV configurations.
 func TestResolveMatrix(t *testing.T) {
 	cases := []struct {
 		depth          string
@@ -46,6 +47,7 @@ func TestResolveMatrix(t *testing.T) {
 	}
 }
 
+// TestSpecWriterRoundTrip verifies writing audio through encoder.Spec and decoding it back produces identical sample frames.
 func TestSpecWriterRoundTrip(t *testing.T) {
 	s, err := Resolve("16", 1, 44100)
 	if err != nil {
@@ -83,6 +85,7 @@ func TestSpecWriterRoundTrip(t *testing.T) {
 	}
 }
 
+// TestDownmixMono verifies stereo downmixing averages the left and right channels into mono output.
 func TestDownmixMono(t *testing.T) {
 	left := []float32{1, 0.5, -0.5}
 	right := []float32{-1, 0.5, 0.5}

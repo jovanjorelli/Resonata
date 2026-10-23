@@ -14,7 +14,7 @@ func roomParams(size, damping, width float32) dsp.ReverbParams {
 	}
 }
 
-// TestTrackRoomSharing reuses one FDN instance per configuration.
+// TestTrackRoomSharing verifies tracks sharing acoustic room parameters reuse a single pre-allocated FDN reverb instance.
 func TestTrackRoomSharing(t *testing.T) {
 	m := New(48000, 4, 256)
 	for k := 0; k < 3; k++ {
@@ -44,7 +44,7 @@ func TestTrackRoomSharing(t *testing.T) {
 	m.SetTrackRoom(9, hall) // ignored, no panic
 }
 
-// TestTrackRoomNone renders a sending track dry.
+// TestTrackRoomNone verifies tracks with no room specification bypass auxiliary room sends.
 func TestTrackRoomNone(t *testing.T) {
 	mk := func() *Mixer {
 		m := New(48000, 2, 256)
@@ -96,7 +96,7 @@ func dspPeak(master []float32) float32 {
 	return peak
 }
 
-// TestTrackRoomCap merges the ninth space into its nearest neighbor.
+// TestTrackRoomCap verifies exceeding the max active room limit merges excess rooms into the nearest Euclidean space.
 func TestTrackRoomCap(t *testing.T) {
 	m := New(48000, 12, 256)
 	for k := 0; k < 10; k++ {
@@ -119,7 +119,7 @@ func TestTrackRoomCap(t *testing.T) {
 	m.Process(256) // all spaces render without errors
 }
 
-// TestMixerAccessors covers the trivial getters and setters.
+// TestMixerAccessors verifies mixer strip volume, pan [-1, 1], and mute accessors.
 func TestMixerAccessors(t *testing.T) {
 	m := New(48000, 2, 256)
 	if m.SampleRate() != 48000 {

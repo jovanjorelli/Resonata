@@ -85,3 +85,81 @@ func TestParallelToggle(t *testing.T) {
 		}
 	}
 }
+
+type panicInstrument struct{}
+
+func (p *panicInstrument) Process(buffer *dsp.Buffer, deltaTime float64) {
+	panic("boom")
+}
+func (p *panicInstrument) NoteOn(pitch int, velocity float32)      {}
+func (p *panicInstrument) NoteOff(pitch int)                       {}
+func (p *panicInstrument) SetParameters(params map[string]float32) {}
+
+// TestParallelPanicRecovery verifies worker panic recovery preserves synchronization boundaries without crashing the host.
+func TestParallelPanicRecovery(t *testing.T) {
+	m := New(48000, 2, 256)
+	m.SetParallel(true)
+	m.AddTrack(&panicInstrument{}, 0, 1)
+	m.Process(256)
+	if m.Err() == nil {
+		t.Fatal("expected error after worker panic, got nil")
+	}
+}
+
+type flakyInstrument struct {
+	shouldPanic bool
+}
+
+func (f *flakyInstrument) Process(buffer *dsp.Buffer, deltaTime float64) {
+	if f.shouldPanic {
+		panic("flaky boom")
+	}
+	for i := 0; i < buffer.Len(); i++ {
+		buffer.Left[i] = 0.5
+		buffer.Right[i] = 0.5
+	}
+}
+func (f *flakyInstrument) NoteOn(pitch int, velocity float32)      {}
+func (f *flakyInstrument) NoteOff(pitch int)                       {}
+func (f *flakyInstrument) SetParameters(params map[string]float32) {}
+
+// TestParallelPanicClearsBuffer verifies panicked track strips clear their output bus to silence.
+func TestParallelPanicClearsBuffer(t *testing.T) {
+	m := New(48000, 2, 256)
+	m.SetParallel(true)
+	inst := &flakyInstrument{shouldPanic: false}
+	m.AddTrack(inst, 0, 1)
+	m.Process(256)
+	master1 := m.Master()
+	if master1[0] == 0 {
+		t.Fatal("expected non-zero audio in first block")
+	}
+	inst.shouldPanic = true
+	m.Process(256)
+	if m.Err() == nil {
+		t.Fatal("expected error on second block panic")
+	}
+	master2 := m.Master()
+	for i, v := range master2 {
+		if v != 0 {
+			t.Fatalf("frame %d = %v; expected 0 silence on panic block, not stale buffer", i, v)
+		}
+	}
+}
+
+// BenchmarkMixerParallel8Track measures parallel track voicing throughput across eight instrument strips.
+func BenchmarkMixerParallel8Track(b *testing.B) {
+	m := New(48000, 8, 1024)
+	m.SetParallel(true)
+	m.SetReverbWet(0.25)
+	for i := 0; i < 8; i++ {
+		m.AddTrack(&dcInstrument{level: 0.1}, 0, 0.8)
+		m.SetSend(i, 0.3)
+	}
+	m.Process(1024)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		m.Process(1024)
+	}
+}

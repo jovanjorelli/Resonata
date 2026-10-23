@@ -22,6 +22,7 @@ func withCLIArgs(t *testing.T, args ...string) {
 	})
 }
 
+// TestParseFlagsDefaults verifies default CLI configuration values for rendering mode, sample rate, and channels.
 func TestParseFlagsDefaults(t *testing.T) {
 	withCLIArgs(t, "resonata")
 	cfg := parseFlags()
@@ -42,6 +43,7 @@ func TestParseFlagsDefaults(t *testing.T) {
 	}
 }
 
+// TestParseFlagsFull verifies parsing all explicit CLI flags into CLIConfig.
 func TestParseFlagsFull(t *testing.T) {
 	withCLIArgs(t, "resonata",
 		"--score=s.json", "--output=o.wav", "--mode=stream",
@@ -71,6 +73,7 @@ func TestParseFlagsFull(t *testing.T) {
 	}
 }
 
+// TestParseFlagsShorthands verifies shorthand flags (-s, -o, -v) populate corresponding config fields.
 func TestParseFlagsShorthands(t *testing.T) {
 	withCLIArgs(t, "resonata", "-s=s.json", "-o=o.wav", "-v")
 	cfg := parseFlags()
@@ -79,6 +82,7 @@ func TestParseFlagsShorthands(t *testing.T) {
 	}
 }
 
+// TestParseFlagsLegacyAliases verifies backward-compatible CLI aliases (--load, --out) are recognized.
 func TestParseFlagsLegacyAliases(t *testing.T) {
 	withCLIArgs(t, "resonata", "--load=old.json", "--out=old.wav")
 	cfg := parseFlags()

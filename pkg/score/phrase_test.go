@@ -38,7 +38,7 @@ func phraseScore(metaBreath, trackBreath string, phrases ...int) string {
 	return b.String()
 }
 
-// TestPhraseFields keeps phrase tags through parsing.
+// TestPhraseFields verifies phrase tags and grouping attributes survive score parsing.
 func TestPhraseFields(t *testing.T) {
 	s, err := ParseJSON([]byte(phraseScore("", "", 1, 1, 2, 2, 3, 3)))
 	if err != nil {
@@ -54,7 +54,7 @@ func TestPhraseFields(t *testing.T) {
 	}
 }
 
-// TestBreathFields parses global and per-track breath pauses.
+// TestBreathFields verifies global and per-track breath pause intervals are correctly decoded.
 func TestBreathFields(t *testing.T) {
 	s, err := ParseJSON([]byte(phraseScore("50", "120", 1, 2)))
 	if err != nil {
@@ -68,13 +68,10 @@ func TestBreathFields(t *testing.T) {
 	}
 }
 
-// TestBreathNegative rejects a negative pause.
+// TestBreathNegative verifies validation rejects negative breath pause durations.
 func TestBreathNegative(t *testing.T) {
-	s, err := ParseJSON([]byte(phraseScore("-10", "", 1, 2)))
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if err := Validate(s); err == nil || !strings.Contains(err.Error(), "breath") {
+	_, err := ParseJSON([]byte(phraseScore("-10", "", 1, 2)))
+	if err == nil || !strings.Contains(err.Error(), "breath") {
 		t.Fatalf("want breath error, got %v", err)
 	}
 }
@@ -87,7 +84,7 @@ func roomScore(room string) string {
 		`"notes": [{"time": 0, "duration": 0.5, "pitch": 60, "velocity": 0.8}]}]}`
 }
 
-// TestRoomPresetString decodes a preset-name room.
+// TestRoomPresetString verifies named acoustic space preset resolution.
 func TestRoomPresetString(t *testing.T) {
 	s, err := ParseJSON([]byte(roomScore(`"cathedral"`)))
 	if err != nil {
@@ -102,7 +99,7 @@ func TestRoomPresetString(t *testing.T) {
 	}
 }
 
-// TestRoomObject decodes an explicit space.
+// TestRoomObject verifies explicit room reverb object parsing and parameter binding.
 func TestRoomObject(t *testing.T) {
 	s, err := ParseJSON([]byte(roomScore(`{"size": 0.7, "damping": 0.4, "width": 0.8}`)))
 	if err != nil {
@@ -120,7 +117,7 @@ func TestRoomObject(t *testing.T) {
 	}
 }
 
-// TestRoomAbsent leaves the track on the master reverb.
+// TestRoomAbsent verifies tracks without room specification inherit the master reverb bus.
 func TestRoomAbsent(t *testing.T) {
 	s, err := ParseJSON([]byte(`{"metadata": {"title": "T", "bpm": 120, "time_signature": "4/4"}, ` +
 		`"tracks": [{"id": "t", "name": "Solo", "instrument": {"type": "ocarina"}, ` +
@@ -134,24 +131,18 @@ func TestRoomAbsent(t *testing.T) {
 	}
 }
 
-// TestRoomInvalidPreset rejects an unknown space name.
+// TestRoomInvalidPreset verifies validation rejects unknown acoustic room preset names.
 func TestRoomInvalidPreset(t *testing.T) {
-	s, err := ParseJSON([]byte(roomScore(`"cavern"`)))
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if err := Validate(s); err == nil || !strings.Contains(err.Error(), "room") {
+	_, err := ParseJSON([]byte(roomScore(`"cavern"`)))
+	if err == nil || !strings.Contains(err.Error(), "room") {
 		t.Fatalf("want room error, got %v", err)
 	}
 }
 
-// TestRoomObjectRange rejects out-of-range space fields.
+// TestRoomObjectRange verifies custom room reverb parameters clamp to valid physical ranges.
 func TestRoomObjectRange(t *testing.T) {
-	s, err := ParseJSON([]byte(roomScore(`{"size": 2.0, "damping": 0.4, "width": 0.8}`)))
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if err := Validate(s); err == nil || !strings.Contains(err.Error(), "room.size") {
+	_, err := ParseJSON([]byte(roomScore(`{"size": 2.0, "damping": 0.4, "width": 0.8}`)))
+	if err == nil || !strings.Contains(err.Error(), "room.size") {
 		t.Fatalf("want room.size error, got %v", err)
 	}
 }

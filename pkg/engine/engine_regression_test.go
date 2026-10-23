@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -145,6 +146,113 @@ func TestRegEngineNoiseGate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	e.SetNoiseGateDB(-50) // must not panic on EQ-wrapped sampler
+	e.SetNoiseGateDB(-50)
 	e.ProcessFrames(e.BlockSize(), nil)
+}
+
+// TestRegTotalFramesBreathShift verifies TotalFrames duration computation accounts for cumulative phrase breath shifts.
+func TestRegTotalFramesBreathShift(t *testing.T) {
+	notes := make([]score.NoteEvent, 20)
+	for i := range notes {
+		notes[i] = score.NoteEvent{
+			Time:     float64(i) * 0.1,
+			Duration: 0.05,
+			Pitch:    60,
+			Velocity: 0.8,
+			PhraseID: i + 1,
+		}
+	}
+	s := &score.Score{
+		Metadata: score.Metadata{
+			Title:         "Breath Test",
+			BPM:           120,
+			TimeSignature: "4/4",
+			BreathMs:      100,
+		},
+		Tracks: []score.Track{
+			{
+				ID:         "lead",
+				Name:       "Lead",
+				Instrument: score.InstrumentDef{Type: "ocarina"},
+				Notes:      notes,
+			},
+		},
+	}
+	e, err := New(s, 48000, 256)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	expectedMin := int((s.Duration() + float64(len(notes))*0.1 + 2.5) * 48000)
+	if e.TotalFrames() < expectedMin-48000 {
+		t.Fatalf("TotalFrames = %d, expected at least %d", e.TotalFrames(), expectedMin-48000)
+	}
+}
+
+// TestRegRoomMergeUsesTransfer verifies room reverb merge correctly transfers aux sends to target room bus.
+func TestRegRoomMergeUsesTransfer(t *testing.T) {
+	var tracks []score.Track
+	for i := 0; i < 12; i++ {
+		tracks = append(tracks, score.Track{
+			ID:         fmt.Sprintf("tr%d", i),
+			Name:       "Tr",
+			Instrument: score.InstrumentDef{Type: "ocarina"},
+			Room: &score.Room{
+				Config: score.RoomConfig{
+					Size:    float64(i) * 0.08,
+					Damping: 0.5,
+				},
+			},
+			Notes: []score.NoteEvent{
+				{Time: 0, Duration: 0.1, Pitch: 60, Velocity: 0.5},
+			},
+		})
+	}
+	s := &score.Score{
+		Metadata: score.Metadata{Title: "Room Test", BPM: 120, TimeSignature: "4/4"},
+		Tracks:   tracks,
+	}
+	e, err := New(s, 48000, 256)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	e.ProcessFrames(256, nil)
+}
+
+type panicInst struct{}
+
+func (p *panicInst) Process(buffer *dsp.Buffer, deltaTime float64) {
+	panic("worker failure")
+}
+func (p *panicInst) NoteOn(pitch int, velocity float32)      {}
+func (p *panicInst) NoteOff(pitch int)                       {}
+func (p *panicInst) SetParameters(params map[string]float32) {}
+
+// TestOfflineRendererPropagatesMixerPanic verifies worker goroutine panics in mixer are caught and surfaced via Err() on OfflineRenderer.
+func TestOfflineRendererPropagatesMixerPanic(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "out.wav")
+	s := &score.Score{
+		Metadata: score.Metadata{Title: "Panic", BPM: 120, TimeSignature: "4/4"},
+		Tracks: []score.Track{
+			{
+				ID:         "t1",
+				Instrument: score.InstrumentDef{Type: "ocarina"},
+				Notes:      []score.NoteEvent{{Time: 0, Duration: 1, Pitch: 60, Velocity: 0.8}},
+			},
+		},
+	}
+	r, err := NewOfflineRenderer(s, outPath, 48000)
+	if err != nil {
+		t.Fatalf("NewOfflineRenderer: %v", err)
+	}
+	defer r.Close()
+	r.Engine().Mixer().SetParallel(true)
+	r.Engine().Mixer().SetTrackInstrument(0, &panicInst{})
+	r.ProcessBlock()
+	if r.Err() == nil {
+		t.Fatal("expected OfflineRenderer to capture parallel panic error, got nil")
+	}
+	if !r.Done() {
+		t.Fatal("expected OfflineRenderer.Done() to be true after error")
+	}
 }

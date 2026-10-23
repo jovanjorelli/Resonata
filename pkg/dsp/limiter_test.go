@@ -24,6 +24,7 @@ func feed(l *Limiter, srcL, srcR []float32) ([]float32, []float32) {
 	return outL, outR
 }
 
+// TestLookaheadBuffer verifies power-of-two lookahead ring buffer delay line indexing and frame delay accuracy.
 func TestLookaheadBuffer(t *testing.T) {
 	d := NewLookaheadBuffer(240)
 	if d.Delay() != 240 || d.Cap() != 256 || d.mask != 255 {
@@ -47,6 +48,7 @@ func TestLookaheadBuffer(t *testing.T) {
 	}
 }
 
+// TestLimiterLookahead verifies 5 ms lookahead detector engages gain reduction prior to signal peaks reaching output.
 func TestLimiterLookahead(t *testing.T) {
 	const sr = 48000
 
@@ -195,6 +197,7 @@ func TestLimiterLookahead(t *testing.T) {
 	}
 }
 
+// TestLimiterAutoGain verifies integrated loudness estimation adapts makeup gain toward -14 LUFS streaming target.
 func TestLimiterAutoGain(t *testing.T) {
 	const sr = 48000
 	sine := func(amp float32, seconds float64) []float32 {
@@ -246,6 +249,7 @@ func TestLimiterAutoGain(t *testing.T) {
 	}
 }
 
+// TestLimiterStereoLink verifies stereo-linked gain reduction driven by maximum instantaneous peak across channels.
 func TestLimiterStereoLink(t *testing.T) {
 	const sr = 48000
 	n := sr / 2
@@ -277,6 +281,7 @@ func TestLimiterStereoLink(t *testing.T) {
 	}
 }
 
+// TestLimiterInterleavedEquivalence verifies planar buffer processing matches interleaved stereo frame processing.
 func TestLimiterInterleavedEquivalence(t *testing.T) {
 	const sr = 48000
 	n := 2048
@@ -307,6 +312,7 @@ func TestLimiterInterleavedEquivalence(t *testing.T) {
 	}
 }
 
+// TestLimiterGainRecovery verifies exponential gain recovery release curve following transient cessation.
 func TestLimiterGainRecovery(t *testing.T) {
 	const sr = 48000
 	l := NewLimiter(sr)
@@ -319,8 +325,38 @@ func TestLimiterGainRecovery(t *testing.T) {
 	if l.Gain() >= 1 {
 		t.Fatalf("gain = %v, want reduction during overload", l.Gain())
 	}
-	feed(l, make([]float32, sr), make([]float32, sr)) // 1 s of silence
+	feed(l, make([]float32, sr), make([]float32, sr))
 	if l.Gain() <= 0.99 {
 		t.Fatalf("gain = %v after 1 s of silence, want recovery to ~1", l.Gain())
+	}
+}
+
+// TestLimiterNaNInfRobustness verifies non-finite floating-point inputs (NaN, +Inf, -Inf) are sanitized to silence.
+func TestLimiterNaNInfRobustness(t *testing.T) {
+	const sr = 48000
+	l := NewLimiter(sr)
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	buf := NewStereoBuffer(128)
+	buf.SetLen(128)
+	buf.Left[0] = nan
+	buf.Right[0] = inf
+	buf.Left[1] = -inf
+	buf.Right[1] = nan
+	for i := 2; i < 128; i++ {
+		buf.Left[i] = 0.5
+		buf.Right[i] = 0.5
+	}
+	l.ProcessStereo(buf)
+	for i := 0; i < 128; i++ {
+		if math.IsNaN(float64(buf.Left[i])) || math.IsInf(float64(buf.Left[i]), 0) {
+			t.Fatalf("left[%d] is NaN/Inf: %v", i, buf.Left[i])
+		}
+		if math.IsNaN(float64(buf.Right[i])) || math.IsInf(float64(buf.Right[i]), 0) {
+			t.Fatalf("right[%d] is NaN/Inf: %v", i, buf.Right[i])
+		}
+	}
+	if math.IsNaN(float64(l.AutoGain())) || math.IsInf(float64(l.AutoGain()), 0) {
+		t.Fatalf("AutoGain is NaN/Inf: %v", l.AutoGain())
 	}
 }

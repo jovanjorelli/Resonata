@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// TestCLIBatchMixedSubprocess verifies CLI batch execution handling mixed valid and invalid scores.
 func TestCLIBatchMixedSubprocess(t *testing.T) {
 	bin := buildResonataBinary(t)
 	in := t.TempDir()

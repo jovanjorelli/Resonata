@@ -16,6 +16,7 @@ const specSFZ = "\nloop_mode=no_loop\n\n" +
 	" sample=c4.wav lokey=60 hikey=64 pitch_keycenter=60\n" +
 	" sample=c5.wav lokey=65 hikey=69 pitch_keycenter=67\n"
 
+// TestParseSFZSpecExample verifies SFZ specification format example parsing into region structures.
 func TestParseSFZSpecExample(t *testing.T) {
 	f, err := ParseSFZ([]byte(specSFZ))
 	if err != nil {
@@ -44,6 +45,7 @@ func TestParseSFZSpecExample(t *testing.T) {
 	}
 }
 
+// TestParseSFZGroupRegion verifies hierarchical opcode inheritance from <group> blocks into child <region> blocks.
 func TestParseSFZGroupRegion(t *testing.T) {
 	doc := `// orchestral sketch
 <group>
@@ -98,6 +100,7 @@ volume=0 pan=25
 	}
 }
 
+// TestParseSFZSamplePathSpaces verifies parsing sample file paths containing whitespace and quotes.
 func TestParseSFZSamplePathSpaces(t *testing.T) {
 	f, err := ParseSFZ([]byte("sample=Grand Piano/c4 loud.wav lokey=60 hikey=64\n"))
 	if err != nil {
@@ -114,9 +117,7 @@ func TestParseSFZSamplePathSpaces(t *testing.T) {
 	}
 }
 
-// TestParseSFZTolerance replaces strict-error behavior: the universal
-// parser never fails on messy input, it drops what it cannot use and
-// counts everything in Stats.
+// TestParseSFZTolerance verifies parser tolerance skipping unknown opcodes, unrecognized headers, and comments.
 func TestParseSFZTolerance(t *testing.T) {
 	// Malformed values are dropped; well-formed ones on the same line survive.
 	sfz, err := ParseSFZ([]byte("sample=a.wav lokey=xx volume=loud pan=25"))
@@ -209,6 +210,7 @@ func writeTestWav(t *testing.T, path string, format wav.Format, sr, frames, ch i
 	}
 }
 
+// TestDecodeRoundTrip verifies sample decoding and encoding round-trip preserves audio waveform data.
 func TestDecodeRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 
@@ -251,6 +253,7 @@ func TestDecodeRoundTrip(t *testing.T) {
 	}
 }
 
+// TestDecode16BitAndSmpl verifies decoding 16-bit integer PCM WAV files and extracting smpl loop points.
 func TestDecode16BitAndSmpl(t *testing.T) {
 	// Hand-built 16-bit stereo file with a smpl chunk (loop frames 1..3).
 	var buf []byte
@@ -308,6 +311,7 @@ func TestDecode16BitAndSmpl(t *testing.T) {
 	}
 }
 
+// TestLoadSFZ verifies end-to-end SFZ library loading and sample asset decoding.
 func TestLoadSFZ(t *testing.T) {
 	dir := t.TempDir()
 	writeTestWav(t, filepath.Join(dir, "c4.wav"), wav.PCM24, 48000, 2000, 1, 261.63)
@@ -357,6 +361,7 @@ func TestLoadSFZ(t *testing.T) {
 	}
 }
 
+// TestRegionHelpers verifies region match predicate helpers across pitch, velocity, and trigger conditions.
 func TestRegionHelpers(t *testing.T) {
 	rg := newRegion()
 	rg.Sample = &SampleData{Samples: make([]float32, 10), SampleRate: 48000, Channels: 1}
@@ -388,5 +393,36 @@ func TestRegionHelpers(t *testing.T) {
 	}
 	if noSample.PlaybackRateFor(60, 48000) != 0 {
 		t.Error("region without sample must have zero rate")
+	}
+}
+
+// TestLoadSFZIndependentRegionLoops verifies distinct regions override loop points independently without mutating shared sample.
+func TestLoadSFZIndependentRegionLoops(t *testing.T) {
+	dir := t.TempDir()
+	samplePath := filepath.Join(dir, "shared.wav")
+	writeTestWav(t, samplePath, wav.PCM16, 48000, 1000, 1, 440)
+	doc := "<group>\n" +
+		"<region> sample=shared.wav lokey=60 hikey=60 loop_start=100 loop_end=200\n" +
+		"<region> sample=shared.wav lokey=61 hikey=61 loop_start=300 loop_end=400\n" +
+		"<region> sample=shared.wav lokey=62 hikey=62\n"
+	sfzPath := filepath.Join(dir, "shared.sfz")
+	if err := os.WriteFile(sfzPath, []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f, err := LoadSFZ(sfzPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Regions) != 3 {
+		t.Fatalf("regions = %d, want 3", len(f.Regions))
+	}
+	if f.Regions[0].Sample.LoopStart != 100 || f.Regions[0].Sample.LoopEnd != 200 {
+		t.Errorf("region 0 loop = %d/%d, want 100/200", f.Regions[0].Sample.LoopStart, f.Regions[0].Sample.LoopEnd)
+	}
+	if f.Regions[1].Sample.LoopStart != 300 || f.Regions[1].Sample.LoopEnd != 400 {
+		t.Errorf("region 1 loop = %d/%d, want 300/400", f.Regions[1].Sample.LoopStart, f.Regions[1].Sample.LoopEnd)
+	}
+	if f.Regions[2].Sample.LoopStart == 100 || f.Regions[2].Sample.LoopStart == 300 {
+		t.Errorf("region 2 loop start corrupted: %d", f.Regions[2].Sample.LoopStart)
 	}
 }

@@ -6,12 +6,7 @@ import (
 	"testing"
 )
 
-// TestSplineAliasing is the fidelity contract: on a high-frequency tone
-// resampled at a non-integer rate, the cubic Hermite spline's error
-// against the analytic truth — and its curvature (kink) content — must
-// be dramatically below linear interpolation, while its amplitude stays
-// true. That is the interpolation-error (imaging) floor that makes
-// linear resampling sound dull and aliased.
+// TestSplineAliasing verifies Catmull-Rom spline interpolation suppresses high-frequency imaging and aliasing.
 func TestSplineAliasing(t *testing.T) {
 	const sr = 48000
 	const f0 = 6000             // Hz, well below Nyquist, rich enough to expose error
@@ -89,9 +84,7 @@ func TestSplineAliasing(t *testing.T) {
 	}
 }
 
-// TestCubicPointFormula checks the FMA/Horner implementation against the
-// literal coefficient formulas and the spline's exact reproduction
-// properties.
+// TestCubicPointFormula verifies Horner scheme Catmull-Rom spline formula evaluation with math.FMA.
 func TestCubicPointFormula(t *testing.T) {
 	naive := func(p0, p1, p2, p3, x float64) float64 {
 		c0 := p1
@@ -143,8 +136,7 @@ func TestCubicPointFormula(t *testing.T) {
 	}
 }
 
-// TestResampleBoundaries covers edge clamping, exact integer phases,
-// termination, step-overshoot bounds, and degenerate buffers.
+// TestResampleBoundaries verifies resampling edge clamping, integer steps, and boundary handling.
 func TestResampleBoundaries(t *testing.T) {
 	// Unit rate at integer phases copies the source exactly (frac = 0
 	// returns p1 through the Horner form).
@@ -216,7 +208,7 @@ func TestResampleBoundaries(t *testing.T) {
 	}
 }
 
-// TestResampleZeroAlloc pins the hot-path contract.
+// TestResampleZeroAlloc proves Catmull-Rom spline resampling hot path performs zero heap allocations.
 func TestResampleZeroAlloc(t *testing.T) {
 	src := make([]float32, 4096)
 	for i := range src {
@@ -236,9 +228,7 @@ func TestResampleZeroAlloc(t *testing.T) {
 	}
 }
 
-// TestVoiceUsesSpline checks the playback engine actually routes through
-// the spline: a curved source resampled by a voice must beat the linear
-// reference in accuracy.
+// TestVoiceUsesSpline verifies sampler voice playback pipeline uses Catmull-Rom cubic interpolation.
 func TestVoiceUsesSpline(t *testing.T) {
 	const sr = 48000
 	// Source: a 5 kHz sine (strongly curved between taps).

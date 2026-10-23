@@ -6,8 +6,7 @@ import (
 	"resonata/pkg/instruments"
 )
 
-// TestEnvelopeOverrideOcarina replaces the breath attack for one note
-// while the remaining times keep their built-in values.
+// TestEnvelopeOverrideOcarina verifies per-note breath attack override while retaining default decay and release times.
 func TestEnvelopeOverrideOcarina(t *testing.T) {
 	o := New(48000)
 	o.NoteOnEx(69, 0.8, instruments.EnvelopeOverride{Attack: 0.3, HasAttack: true})

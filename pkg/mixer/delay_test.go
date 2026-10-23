@@ -34,9 +34,7 @@ func delayCfg(seconds, feedback float32) dsp.DelayConfig {
 	}
 }
 
-// TestMixerDelayIndependence gives two tracks different tap lengths and
-// feedback amounts, then solos each via mute and checks every echo lands
-// on its own track's schedule with its own decay — never the other's.
+// TestMixerDelayIndependence verifies per-track stereo delay lines maintain independent delay times and tap buffers.
 func TestMixerDelayIndependence(t *testing.T) {
 	const sr = 48000
 	setup := func() *Mixer {
@@ -97,9 +95,7 @@ func TestMixerDelayIndependence(t *testing.T) {
 	}
 }
 
-// TestMixerDelayIsolation checks three tracks where only one has an
-// echo: with the echo track muted the tail is exactly silent, and the
-// echoless tracks report nil instances.
+// TestMixerDelayIsolation verifies delay effects on one track do not leak audio into adjacent dry tracks.
 func TestMixerDelayIsolation(t *testing.T) {
 	const sr = 48000
 	setup := func() *Mixer {
@@ -134,8 +130,7 @@ func TestMixerDelayIsolation(t *testing.T) {
 	}
 }
 
-// TestMixerDelayWetZeroBypass checks JSON authority at the mixer level:
-// wet zero renders exactly the dry signal.
+// TestMixerDelayWetZeroBypass verifies setting delay wet mix to 0.0 completely bypasses echo processing.
 func TestMixerDelayWetZeroBypass(t *testing.T) {
 	const sr = 48000
 	dry := New(sr, 1, 256)
@@ -163,8 +158,7 @@ func TestMixerDelayWetZeroBypass(t *testing.T) {
 	}
 }
 
-// TestMixerDelayScale checks ten simultaneous echoes: memory stays
-// bounded and the hot loop allocates nothing.
+// TestMixerDelayScale verifies multiple simultaneous track delays operate without heap growth in steady state.
 func TestMixerDelayScale(t *testing.T) {
 	const sr = 48000
 	m := New(sr, 10, 512)

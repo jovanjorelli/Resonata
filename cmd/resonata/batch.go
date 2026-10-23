@@ -1,8 +1,7 @@
-// Batch rendering for the headless engine.
-//
-// Batch mode renders every score file in a directory with one shared
-// configuration. Each input keeps its own engine instance so tracks,
-// instruments, and reverb tails never leak between scores.
+// Batch rendering for the headless engine renders every score file in a directory
+// with one shared configuration. Each input keeps its own engine instance so
+// tracks, instruments, and reverb tails never leak between scores.
+
 package main
 
 import (
@@ -10,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -17,7 +17,6 @@ import (
 	"resonata/pkg/score"
 )
 
-// runBatch renders all JSON and YAML scores in cfg.BatchDir.
 func runBatch(cfg *CLIConfig) error {
 	dir := strings.TrimSpace(cfg.BatchDir)
 	entries, err := os.ReadDir(dir)
@@ -31,7 +30,7 @@ func runBatch(cfg *CLIConfig) error {
 		}
 		ext := strings.ToLower(filepath.Ext(e.Name()))
 		switch ext {
-		case ".json", ".yaml", ".yml":
+		case ".json":
 			inputs = append(inputs, filepath.Join(dir, e.Name()))
 		case ".mid", ".midi":
 			inputs = append(inputs, filepath.Join(dir, e.Name()))
@@ -61,12 +60,14 @@ func runBatch(cfg *CLIConfig) error {
 	return nil
 }
 
-// renderOneBatched loads one input file and renders it to a WAV file
-// derived from cfg.OutputPath or the input path.
-func renderOneBatched(cfg *CLIConfig, inPath string) error {
+func renderOneBatched(cfg *CLIConfig, inPath string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during render: %v\nstack:\n%s", r, debug.Stack())
+		}
+	}()
 	ext := strings.ToLower(filepath.Ext(inPath))
 	var s *score.Score
-	var err error
 	if ext == ".mid" || ext == ".midi" {
 		s, err = importMIDIScoreForBatch(inPath)
 		if err != nil {

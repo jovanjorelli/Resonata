@@ -64,6 +64,7 @@ func testScore(t *testing.T, dir string) *score.Score {
 	}
 }
 
+// TestNewValidates verifies Engine constructor validates score parameters prior to allocating rendering pipelines.
 func TestNewValidates(t *testing.T) {
 	if _, err := New(nil, 48000, 1024); err == nil {
 		t.Fatal("nil score accepted")
@@ -78,6 +79,7 @@ func TestNewValidates(t *testing.T) {
 	}
 }
 
+// TestEnginePlayback verifies scheduling note events and rendering audio across multiple blocks.
 func TestEnginePlayback(t *testing.T) {
 	eng, err := New(testScore(t, t.TempDir()), 48000, 1024)
 	if err != nil {
@@ -133,6 +135,7 @@ func TestEnginePlayback(t *testing.T) {
 	}
 }
 
+// TestStaccatoScheduling verifies staccato articulation shortens effective note duration to 50%.
 func TestStaccatoScheduling(t *testing.T) {
 	eng, err := New(testScore(t, t.TempDir()), 48000, 1024)
 	if err != nil {
@@ -165,6 +168,7 @@ func TestStaccatoScheduling(t *testing.T) {
 	}
 }
 
+// TestOfflineRenderer verifies block-by-block progress reporting and peak amplitude tracking during offline render.
 func TestOfflineRenderer(t *testing.T) {
 	dir := t.TempDir()
 	out := filepath.Join(dir, "out.wav")
@@ -226,9 +230,7 @@ func TestOfflineRenderer(t *testing.T) {
 	}
 }
 
-// TestEngineEQ checks that the score DSL's per-track EQ is applied during
-// engine rendering: a -12 dB peaking cut at the note's fundamental and an
-// 800 Hz highpass both attenuate exactly as the RBJ curves predict.
+// TestEngineEQ verifies per-track EQ filters are constructed and applied during voice strip rendering.
 func TestEngineEQ(t *testing.T) {
 	pure := map[string]float32{"breath_noise": 0, "vibrato_depth": 0, "brightness": 0}
 	notes := []score.NoteEvent{{Time: 0, Duration: 0.6, Pitch: 69, Velocity: 1}}

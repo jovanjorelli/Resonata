@@ -25,6 +25,7 @@ func (d *dcInstrument) SetParameters(params map[string]float32) {}
 
 var _ instruments.Instrument = (*dcInstrument)(nil)
 
+// TestMixerSumming verifies linear strip summing into the stereo master bus with pre-allocated scratch arena.
 func TestMixerSumming(t *testing.T) {
 	m := New(48000, 4, 256)
 	m.SetReverbWet(0) // isolate the summing stage
@@ -50,6 +51,7 @@ func TestMixerSumming(t *testing.T) {
 	}
 }
 
+// TestMixerPanVolumeMute verifies constant-power panner gains, linear fader gain [0, 1], and strip muting.
 func TestMixerPanVolumeMute(t *testing.T) {
 	m := New(48000, 3, 16)
 	m.SetReverbWet(0)
@@ -83,6 +85,7 @@ func TestMixerPanVolumeMute(t *testing.T) {
 	_ = b
 }
 
+// TestMixerTrackLimit verifies strip allocation capacity bounds.
 func TestMixerTrackLimit(t *testing.T) {
 	m := New(48000, 2, 16)
 	if m.AddTrack(&dcInstrument{}, 0, 1) != 0 || m.AddTrack(&dcInstrument{}, 0, 1) != 1 {
@@ -96,6 +99,7 @@ func TestMixerTrackLimit(t *testing.T) {
 	}
 }
 
+// TestMixerBlockClamp verifies clamping frame counts to pre-allocated maxBlock buffer limits.
 func TestMixerBlockClamp(t *testing.T) {
 	m := New(48000, 1, 128)
 	m.SetReverbWet(0)
@@ -118,6 +122,7 @@ func TestMixerBlockClamp(t *testing.T) {
 	}
 }
 
+// TestMixerClipperEngaged verifies soft tanh saturation engages when summed strip amplitude exceeds master threshold.
 func TestMixerClipperEngaged(t *testing.T) {
 	m := New(48000, 3, 64)
 	m.SetReverbWet(0)
@@ -168,6 +173,7 @@ func peakOf(b []float32) float32 {
 	return p
 }
 
+// TestMixerReverbSends verifies aux send levels route linear signal fractions to FDN reverb buses.
 func TestMixerReverbSends(t *testing.T) {
 	// Send = 0: the master stays exactly dry no matter the wet level.
 	m := New(48000, 1, 256)
@@ -223,6 +229,7 @@ func TestMixerReverbSends(t *testing.T) {
 	}
 }
 
+// TestMixerWithOcarina verifies end-to-end rendering of physical ocarina voices through mixer strips.
 func TestMixerWithOcarina(t *testing.T) {
 	m := New(48000, 2, 512)
 	m.SetReverbWet(0.3)
@@ -262,6 +269,7 @@ func TestMixerWithOcarina(t *testing.T) {
 	}
 }
 
+// TestMixerZeroAlloc proves steady-state mixer summing loop performs zero heap allocations.
 func TestMixerZeroAlloc(t *testing.T) {
 	m := New(48000, 8, 512)
 	o := ocarina.New(48000)
@@ -279,6 +287,7 @@ func TestMixerZeroAlloc(t *testing.T) {
 	}
 }
 
+// TestMixerAddTrackZeroAlloc verifies pre-allocated strip arena avoids allocations during block processing.
 func TestMixerAddTrackZeroAlloc(t *testing.T) {
 	m := New(48000, 4, 64)
 	dc := &dcInstrument{level: 0.1}

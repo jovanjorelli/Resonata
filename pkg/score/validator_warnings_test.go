@@ -5,13 +5,12 @@ import (
 	"testing"
 )
 
-// TestValidatorDelayWetWarning checks the soft inaudible-bus warning: wet
-// zero with a live send validates cleanly but warns.
+// TestValidatorDelayWetWarning verifies warning generation when delay wet send is set to zero.
 func TestValidatorDelayWetWarning(t *testing.T) {
 	s := baseScore()
 	s.Tracks[0].Delay = &TrackDelay{
 		Mode: "pingpong", Subdivision: "1/8d",
-		Feedback: 0.5, DampingHz: 4000, Wet: 0, Send: 0.5,
+		Feedback: 0.5, DampingHz: 4000, Wet: 0,
 	}
 	if err := Validate(s); err != nil {
 		t.Fatalf("muted delay rejected as error: %v", err)
@@ -40,13 +39,12 @@ func TestValidatorDelayWetWarning(t *testing.T) {
 	}
 }
 
-// TestValidatorDelayRanges checks that out-of-range mix values are hard
-// errors naming the track, the field, and the offending value.
+// TestValidatorDelayRanges verifies out-of-range delay parameters produce validation errors.
 func TestValidatorDelayRanges(t *testing.T) {
 	validDelay := func() *TrackDelay {
 		return &TrackDelay{
 			Mode: "stereo", Subdivision: "1/4",
-			Feedback: 0.5, DampingHz: 4000, Wet: 0.5, Send: 0.5,
+			Feedback: 0.5, DampingHz: 4000, Wet: 0.5,
 		}
 	}
 	tests := []struct {
@@ -59,8 +57,6 @@ func TestValidatorDelayRanges(t *testing.T) {
 		{"wet negative", func(s *Score) { s.Tracks[0].Delay = validDelay(); s.Tracks[0].Delay.Wet = -0.1 }, "delay.wet", "-0.1"},
 		{"feedback too high", func(s *Score) { s.Tracks[0].Delay = validDelay(); s.Tracks[0].Delay.Feedback = 0.99 }, "delay.feedback", "0.99"},
 		{"feedback negative", func(s *Score) { s.Tracks[0].Delay = validDelay(); s.Tracks[0].Delay.Feedback = -0.1 }, "delay.feedback", "-0.1"},
-		{"send too high", func(s *Score) { s.Tracks[0].Delay = validDelay(); s.Tracks[0].Delay.Send = 1.5 }, "delay.send", "1.5"},
-		{"send negative", func(s *Score) { s.Tracks[0].Delay = validDelay(); s.Tracks[0].Delay.Send = -0.1 }, "delay.send", "-0.1"},
 		{"volume too high", func(s *Score) { s.Tracks[0].Volume = 1.5 }, "volume", "1.5"},
 		{"volume negative", func(s *Score) { s.Tracks[0].Volume = -0.5 }, "volume", "-0.5"},
 		{"pan too high", func(s *Score) { s.Tracks[0].Pan = 1.5 }, "pan", "1.5"},

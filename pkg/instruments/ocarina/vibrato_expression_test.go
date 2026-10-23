@@ -7,9 +7,7 @@ import (
 	"resonata/pkg/instruments"
 )
 
-// TestVibratoOcarina replaces the default LFO rate and depth with score
-// vibrato (semitones become fractional modulation) and scales output by
-// expression.
+// TestVibratoOcarina verifies vibrato LFO parameter conversion and expression gain scaling on the ocarina.
 func TestVibratoOcarina(t *testing.T) {
 	o := New(48000)
 	o.NoteOnParams(69, 0.8, instruments.NoteParams{

@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestPanGainsExtremes verifies constant-power panning law [cos(θ), sin(θ)] for θ in [0, π/2] at hard-left and hard-right.
 func TestPanGainsExtremes(t *testing.T) {
 	if l, r := PanGains(-1); l != 1 || r != 0 {
 		t.Errorf("hard left = (%v, %v), want exact (1, 0)", l, r)
@@ -25,6 +26,7 @@ func TestPanGainsExtremes(t *testing.T) {
 	}
 }
 
+// TestPanGainsConstantPower verifies constant-power invariant L² + R² ≈ 1.0 across all stereo pan positions.
 func TestPanGainsConstantPower(t *testing.T) {
 	prevL, prevR := float32(2), float32(-2)
 	for k := 0; k <= 200; k++ {

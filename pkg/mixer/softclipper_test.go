@@ -1,7 +1,11 @@
 package mixer
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
+// TestSoftClipperPassthrough verifies signals below threshold pass unmodified through the soft clipper.
 func TestSoftClipperPassthrough(t *testing.T) {
 	c := NewSoftClipper(0.9)
 	for _, x := range []float32{0, 0.1, -0.1, 0.5, -0.5, 0.8999, 0.9, -0.9} {
@@ -11,6 +15,7 @@ func TestSoftClipperPassthrough(t *testing.T) {
 	}
 }
 
+// TestSoftClipperContinuity verifies C1-continuous transition from linear region to tanh saturation curve.
 func TestSoftClipperContinuity(t *testing.T) {
 	c := NewSoftClipper(0.9)
 	for _, eps := range []float32{1e-6, 1e-4, 0.01, 0.05} {
@@ -26,6 +31,7 @@ func TestSoftClipperContinuity(t *testing.T) {
 	}
 }
 
+// TestSoftClipperBounds verifies output amplitude is asymptotically bounded within [-1.0, 1.0].
 func TestSoftClipperBounds(t *testing.T) {
 	c := NewSoftClipper(0.9)
 	prev := float32(0.9)
@@ -44,6 +50,7 @@ func TestSoftClipperBounds(t *testing.T) {
 	}
 }
 
+// TestSoftClipperThreshold verifies saturation activates strictly above the specified linear threshold.
 func TestSoftClipperThreshold(t *testing.T) {
 	if th := NewSoftClipper(5).Threshold(); th != 1 {
 		t.Errorf("high clamp: threshold = %v, want 1", th)
@@ -64,6 +71,7 @@ func TestSoftClipperThreshold(t *testing.T) {
 	}
 }
 
+// TestSoftClipperSlice verifies block-based in-place processing matches scalar sample-by-sample clipping.
 func TestSoftClipperSlice(t *testing.T) {
 	a := NewSoftClipper(0.9)
 	b := NewSoftClipper(0.9)
@@ -77,5 +85,24 @@ func TestSoftClipperSlice(t *testing.T) {
 		if data[i] != want[i] {
 			t.Fatalf("slice[%d] = %v, want %v", i, data[i], want[i])
 		}
+	}
+}
+
+// TestSoftClipperNaNInfAndThresholdOne verifies NaN/Inf sanitization to silence and behavior at threshold 1.0.
+func TestSoftClipperNaNInfAndThresholdOne(t *testing.T) {
+	c := NewSoftClipper(1.0)
+	if y := c.ProcessSample(1.5); y != 1.0 {
+		t.Fatalf("threshold 1.0 on 1.5 = %v, want 1.0", y)
+	}
+	if y := c.ProcessSample(-1.5); y != -1.0 {
+		t.Fatalf("threshold 1.0 on -1.5 = %v, want -1.0", y)
+	}
+	nan := float32(math.NaN())
+	if y := c.ProcessSample(nan); y != 0 {
+		t.Fatalf("NaN output = %v, want 0", y)
+	}
+	inf := float32(math.Inf(1))
+	if y := c.ProcessSample(inf); y != 0 {
+		t.Fatalf("Inf output = %v, want 0", y)
 	}
 }

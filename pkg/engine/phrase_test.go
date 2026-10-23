@@ -48,8 +48,7 @@ func onFrames(t *testing.T, e *Engine) map[int]int {
 
 const testRate48 = 48000
 
-// TestPhraseBreath delays each new phrase cumulatively: note 3 by
-// 100 ms after one transition, note 5 by 200 ms after two.
+// TestPhraseBreath verifies cumulative pause insertion across sequential phrase markers.
 func TestPhraseBreath(t *testing.T) {
 	s := breathScore(0, breathTrack([]int{1, 1, 2, 2, 3, 3}, 100))
 	e, err := New(s, testRate48, 256)
@@ -68,7 +67,7 @@ func TestPhraseBreath(t *testing.T) {
 	}
 }
 
-// TestBreathZeroPhrase inserts no pause across phrase_id zero.
+// TestBreathZeroPhrase verifies zero phrase tag inserts no breath pause.
 func TestBreathZeroPhrase(t *testing.T) {
 	s := breathScore(0, breathTrack([]int{0, 1, 0, 2}, 100))
 	e, err := New(s, testRate48, 256)
@@ -83,7 +82,7 @@ func TestBreathZeroPhrase(t *testing.T) {
 	}
 }
 
-// TestBreathDefault leaves times untouched without a breath value.
+// TestBreathDefault verifies default score breath pause handling when per-track breath is omitted.
 func TestBreathDefault(t *testing.T) {
 	s := breathScore(0, breathTrack([]int{1, 2, 3}, 0))
 	e, err := New(s, testRate48, 256)
@@ -98,8 +97,7 @@ func TestBreathDefault(t *testing.T) {
 	}
 }
 
-// TestBreathOverride prefers the track pause over the global pause:
-// a 120 ms track breath delays the second phrase by 5760 frames.
+// TestBreathOverride verifies track breath pause takes precedence over global score metadata breath.
 func TestBreathOverride(t *testing.T) {
 	s := breathScore(50, breathTrack([]int{1, 2}, 120))
 	e, err := New(s, testRate48, 256)
@@ -133,7 +131,7 @@ func roomTrack(id, room string) score.Track {
 	return tr
 }
 
-// TestRoomPreset routes a cathedral track to cathedral parameters.
+// TestRoomPreset verifies named acoustic space preset resolution and routing to auxiliary reverb bus.
 func TestRoomPreset(t *testing.T) {
 	s := breathScore(0, roomTrack("t", `"cathedral"`))
 	e, err := New(s, testRate48, 256)
@@ -150,7 +148,7 @@ func TestRoomPreset(t *testing.T) {
 	}
 }
 
-// TestRoomObject routes explicit size/damping/width values.
+// TestRoomObject verifies explicit room reverb object routing.
 func TestRoomObject(t *testing.T) {
 	s := breathScore(0, roomTrack("t", `{"size": 0.7, "damping": 0.4, "width": 0.8}`))
 	e, err := New(s, testRate48, 256)
@@ -166,7 +164,7 @@ func TestRoomObject(t *testing.T) {
 	}
 }
 
-// TestRoomMaster keeps a roomless track on the master reverb.
+// TestRoomMaster verifies tracks without room specification route to master reverb bus.
 func TestRoomMaster(t *testing.T) {
 	s := breathScore(0, roomTrack("t", ""))
 	e, err := New(s, testRate48, 256)
@@ -178,7 +176,7 @@ func TestRoomMaster(t *testing.T) {
 	}
 }
 
-// TestRoomMultiple routes three rooms to their own spaces.
+// TestRoomMultiple verifies routing distinct tracks to their respective room reverb instances.
 func TestRoomMultiple(t *testing.T) {
 	s := breathScore(0,
 		roomTrack("a", `"cathedral"`),

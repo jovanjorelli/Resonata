@@ -37,6 +37,7 @@ func buildResonataBinary(t *testing.T) string {
 	return out
 }
 
+// TestCLIHelpFlagTable verifies CLI help output documents all supported command line flags.
 func TestCLIHelpFlagTable(t *testing.T) {
 	bin := buildResonataBinary(t)
 	cmd := exec.Command(bin, "--help")
@@ -52,6 +53,7 @@ func TestCLIHelpFlagTable(t *testing.T) {
 	}
 }
 
+// TestCLIVersionString verifies CLI --version flag prints canonical application version.
 func TestCLIVersionString(t *testing.T) {
 	bin := buildResonataBinary(t)
 	cmd := exec.Command(bin, "--version")
@@ -64,6 +66,7 @@ func TestCLIVersionString(t *testing.T) {
 	}
 }
 
+// TestCLIUnknownFlag verifies CLI exits with error code when unknown flag is provided.
 func TestCLIUnknownFlag(t *testing.T) {
 	bin := buildResonataBinary(t)
 	cmd := exec.Command(bin, "--bogus-flag")
@@ -82,6 +85,7 @@ func TestCLIUnknownFlag(t *testing.T) {
 	}
 }
 
+// TestCLIMissingInputFile verifies CLI exits with error code when input file does not exist.
 func TestCLIMissingInputFile(t *testing.T) {
 	bin := buildResonataBinary(t)
 	missing := filepath.Join(t.TempDir(), "nope.json")

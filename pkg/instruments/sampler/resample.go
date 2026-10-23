@@ -36,6 +36,9 @@ func cubicPoint(p0, p1, p2, p3, x float64) float64 {
 // p0/p3 neighbours when the phase is near the start (index 0 or 1) or
 // the end of the buffer.
 func readSample(src []float32, i int) float64 {
+	if len(src) == 0 {
+		return 0
+	}
 	if i < 0 {
 		i = 0
 	} else if i >= len(src) {
@@ -50,6 +53,9 @@ func readSample(src []float32, i int) float64 {
 // bounds. Used for loop-crossfade reads so the interpolation stencil
 // never reaches outside the loop region.
 func readSampleBounded(src []float32, i, lo, hi int) float64 {
+	if len(src) == 0 {
+		return 0
+	}
 	if hi <= lo {
 		return readSample(src, i)
 	}
@@ -104,16 +110,14 @@ func interpSampleLinear(src []float32, phase float64) float64 {
 	return s1 + (s2-s1)*frac
 }
 
-// ResampleTo renders src into dst at the given playback rate (source
-// frames advanced per output frame), starting at startPhase, using the
-// cubic Hermite spline. It stops at the source end or when dst is full
-// and returns the number of frames written. No allocation.
+// ResampleTo renders src into dst at the given playback rate (source frames advanced per output frame),
+// starting at startPhase, using Catmull-Rom Horner scheme evaluation (4-point, 3rd-order cubic Hermite
+// spline via math.FMA) with zero heap allocations. It stops at the source end or when dst is full.
 func ResampleTo(dst []float32, src []float32, rate, startPhase float64) int {
 	return resampleTo(dst, src, rate, startPhase, false)
 }
 
-// ResampleLinearTo is the linear-interpolation variant of ResampleTo,
-// the A/B reference for artifact measurements.
+// ResampleLinearTo is the linear-interpolation reference variant of ResampleTo with zero heap allocations.
 func ResampleLinearTo(dst []float32, src []float32, rate, startPhase float64) int {
 	return resampleTo(dst, src, rate, startPhase, true)
 }

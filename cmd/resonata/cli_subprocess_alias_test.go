@@ -25,6 +25,7 @@ func sha256File(t *testing.T, path string) [32]byte {
 	return sha256.Sum256(data)
 }
 
+// TestCLILegacyLoadAlias verifies legacy --load flag alias execution via subprocess.
 func TestCLILegacyLoadAlias(t *testing.T) {
 	bin := buildResonataBinary(t)
 	dir := t.TempDir()
@@ -38,6 +39,7 @@ func TestCLILegacyLoadAlias(t *testing.T) {
 	}
 }
 
+// TestCLILegacyOutAlias verifies legacy --out flag alias execution via subprocess.
 func TestCLILegacyOutAlias(t *testing.T) {
 	bin := buildResonataBinary(t)
 	dir := t.TempDir()

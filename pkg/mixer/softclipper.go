@@ -40,8 +40,11 @@ func (c *SoftClipper) SetClean(clean bool) { c.clean = clean }
 // Clean reports whether clean mode is active.
 func (c *SoftClipper) Clean() bool { return c.clean }
 
-// ProcessSample soft-clips one sample.
+// ProcessSample applies soft tanh tape saturation above threshold or hard-clamps in clean mode.
 func (c *SoftClipper) ProcessSample(x float32) float32 {
+	if math.IsNaN(float64(x)) || math.IsInf(float64(x), 0) {
+		return 0
+	}
 	if c.clean {
 		if x > 1 {
 			return 1
@@ -55,8 +58,15 @@ func (c *SoftClipper) ProcessSample(x float32) float32 {
 	if x <= t && x >= -t {
 		return x
 	}
-	over := float64(abs32(x)-t) / float64(1-t)
-	y := float64(t) + float64(1-t)*math.Tanh(over)
+	denom := float64(1 - t)
+	if denom < 1e-6 {
+		if x > 0 {
+			return 1
+		}
+		return -1
+	}
+	over := float64(abs32(x)-t) / denom
+	y := float64(t) + denom*math.Tanh(over)
 	if x < 0 {
 		y = -y
 	}

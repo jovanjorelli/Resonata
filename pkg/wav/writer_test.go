@@ -105,8 +105,7 @@ func sineFrames(n int, freq, amp float64, sampleRate int) []float32 {
 	return out
 }
 
-// TestWriterHeaderPCM16 checks every header field of a 16-bit stereo
-// file with known samples.
+// TestWriterHeaderPCM16 verifies RIFF header structure and byte counts for 16-bit integer PCM stereo files.
 func TestWriterHeaderPCM16(t *testing.T) {
 	const sr, ch, frames = 48000, 2, 100
 	f, w := writeTempBits(t, "p16.wav", PCM16, 16, sr, ch)
@@ -149,8 +148,7 @@ func writeTempBits(t *testing.T, name string, format Format, bits, sampleRate, c
 	return f, w
 }
 
-// TestWriterHeaderPCM24 checks every header field of a 24-bit stereo
-// file with known samples.
+// TestWriterHeaderPCM24 verifies RIFF header structure and 3-byte packing for 24-bit integer PCM stereo files.
 func TestWriterHeaderPCM24(t *testing.T) {
 	const sr, ch, frames = 48000, 2, 100
 	f, w := writeTemp(t, "p24.wav", PCM24, sr, ch)
@@ -178,8 +176,7 @@ func TestWriterHeaderPCM24(t *testing.T) {
 	}
 }
 
-// TestWriterHeaderPCM32 checks the 32-bit integer PCM layout: format
-// tag 1 with 4 bytes per sample.
+// TestWriterHeaderPCM32 verifies 32-bit integer PCM header fields and sample alignment.
 func TestWriterHeaderPCM32(t *testing.T) {
 	const sr, ch, frames = 48000, 2, 100
 	f, w := writeTempBits(t, "p32.wav", PCM32, 32, sr, ch)
@@ -258,8 +255,7 @@ func checkExtensible(t *testing.T, raw []byte, subWant uint16, channels, sampleR
 	return 60
 }
 
-// TestWriterHeaderFloat32 checks the 32-bit float stereo layout:
-// extensible tag, float SubFormat GUID, valid bits 32, stereo mask.
+// TestWriterHeaderFloat32 verifies WAVE_FORMAT_EXTENSIBLE header generation for 32-bit IEEE float files.
 func TestWriterHeaderFloat32(t *testing.T) {
 	const sr, ch, frames = 48000, 2, 64
 	f, w := writeTemp(t, "f32.wav", Float32, sr, ch)
@@ -286,8 +282,7 @@ func TestWriterHeaderFloat32(t *testing.T) {
 	}
 }
 
-// TestWriterEmpty checks finalizing without samples produces a valid
-// zero-length file instead of an error.
+// TestWriterEmpty verifies finalizing a WAV writer without samples produces a valid zero-data file.
 func TestWriterEmpty(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -327,8 +322,7 @@ func TestWriterEmpty(t *testing.T) {
 	}
 }
 
-// TestWriterRoundTrip writes a 440 Hz sine and reads it back, comparing
-// against the original within quantization tolerance.
+// TestWriterRoundTrip verifies writing synthesized waveforms and reading them back preserves sample values within quantization tolerance.
 func TestWriterRoundTrip(t *testing.T) {
 	const sr, frames = 48000, 100
 	// 24-bit: half-scale keeps float32 representation error well under
@@ -450,8 +444,7 @@ func TestWriterRoundTrip(t *testing.T) {
 	}
 }
 
-// TestWriterMonoStereo checks channel counts and that stereo channels
-// stay separated.
+// TestWriterMonoStereo verifies mono and stereo channel de-interleaving and container layout correctness.
 func TestWriterMonoStereo(t *testing.T) {
 	const sr, frames = 48000, 64
 	mono := sineFrames(frames, 440, 0.5, sr)
@@ -519,8 +512,7 @@ func TestWriterMonoStereo(t *testing.T) {
 	}
 }
 
-// TestWriterFileSize checks total file size against header plus data for
-// both encodings, catching off-by-one chunk arithmetic.
+// TestWriterFileSize verifies overall file size matches 8-byte RIFF preamble plus chunk payloads.
 func TestWriterFileSize(t *testing.T) {
 	const sr, ch, frames = 48000, 2, 257 // odd count exercises no padding path
 	buf := sineFrames(frames, 440, 0.5, sr)
@@ -559,8 +551,7 @@ func TestWriterFileSize(t *testing.T) {
 	}
 }
 
-// TestWriterRejectsBadLayout checks the constructor refuses unsupported
-// format tags and layouts instead of emitting a corrupt header.
+// TestWriterRejectsBadLayout verifies invalid channel counts and unsupported sample rates are rejected.
 func TestWriterRejectsBadLayout(t *testing.T) {
 	dir := t.TempDir()
 	for _, tc := range []struct {
@@ -587,8 +578,7 @@ func TestWriterRejectsBadLayout(t *testing.T) {
 	}
 }
 
-// TestWriterMonoFormats checks 16-bit PCM, 24-bit PCM, and 32-bit float
-// mono headers plus decoded content.
+// TestWriterMonoFormats verifies mono encoding across 16-bit, 24-bit, and 32-bit float formats.
 func TestWriterMonoFormats(t *testing.T) {
 	const sr, frames = 48000, 64
 	mono := sineFrames(frames, 440, 0.5, sr)
@@ -657,8 +647,7 @@ func TestWriterMonoFormats(t *testing.T) {
 	}
 }
 
-// TestWriterMultichannel checks that layouts above stereo use
-// WAVE_FORMAT_EXTENSIBLE with the quad speaker mask.
+// TestWriterMultichannel verifies multichannel layouts up to 8 channels apply standard 7.1 Surround mask 0x63F.
 func TestWriterMultichannel(t *testing.T) {
 	const sr, ch, frames = 48000, 4, 32
 	f, w := writeTempBits(t, "quad.wav", PCM24, 24, sr, ch)
@@ -699,9 +688,7 @@ func TestWriterMultichannel(t *testing.T) {
 	}
 }
 
-// TestWriterSamplerReaderFloat writes a 32-bit float extensible file and
-// reads it back through DecodeFile — the same reader the sampler uses to
-// load samples — verifying normalized format info and sample accuracy.
+// TestWriterSamplerReaderFloat verifies float32 extensible files load seamlessly into sampler reader.
 func TestWriterSamplerReaderFloat(t *testing.T) {
 	const sr, frames = 48000, 128
 	f, w := writeTemp(t, "samplerfloat.wav", Float32, sr, 2)
@@ -734,8 +721,7 @@ func TestWriterSamplerReaderFloat(t *testing.T) {
 	}
 }
 
-// TestWriterSampleRates checks the rate field at 44100, 48000, and
-// 96000 Hz for both encodings.
+// TestWriterSampleRates verifies rate fields for 44.1 kHz, 48 kHz, and 96 kHz rates.
 func TestWriterSampleRates(t *testing.T) {
 	buf := sineFrames(32, 440, 0.5, 48000)
 	for _, sr := range []int{44100, 48000, 96000} {

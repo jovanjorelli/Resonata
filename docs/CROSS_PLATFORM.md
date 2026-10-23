@@ -19,9 +19,9 @@ CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/resonata.exe ./cmd/resonata
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/resonata.exe ./cmd/resonata
 ```
 
-The Linux binary has zero dependencies on X11, Wayland, or GPU
-libraries: it is fully static. `scripts/verify_headless.sh` enforces
-the 15 MB stripped size limit and the Windows cross-compile.
+The Linux binary has zero dependencies on X11, Wayland, ALSA, PulseAudio,
+PipeWire, or GPU drivers: it is fully static. `scripts/verify_headless.sh`
+enforces the stripped size limit (~3.5 MB) and the Windows cross-compile.
 
 ## Path handling
 
@@ -33,113 +33,41 @@ All sample and include paths pass through `SanitizePath`
 | `samples\piano\c4.wav` | `samples/piano/c4.wav` |
 | `"Grand Piano/c4 loud.wav"` | `Grand Piano/c4 loud.wav` |
 | `samples//piano//c4.wav` | `samples/piano/c4.wav` |
+| `C:\Samples\kick.wav` (on Linux) | `Samples/kick.wav` |
 
-Backslashes become forward slashes, surrounding quotes are stripped,
-and repeated separators collapse. Score-relative SFZ references
-resolve against the working directory; sample references resolve
-against the SFZ file's directory.
+- Backslashes become forward slashes.
+- Surrounding quotes are stripped.
+- Repeated slashes collapse.
+- Windows drive letters (`C:`, `D:`) are stripped when resolving under Unix systems.
+- Relative paths are anchored against the instrument library's root directory.
+
+### Symlink path traversal protection
+
+When resolving paths across symbolic links, `isWithinBase` verifies that
+the real canonical path (`filepath.EvalSymlinks`) remains strictly inside
+the library root directory (`realBase`). Symlink escapes pointing to parent
+or system directories (e.g. `/etc` or `/var`) are caught and rejected
+with `os.ErrNotExist`.
 
 ### Case-insensitive path resolution (Linux and macOS)
 
 Linux filesystems are typically case-sensitive, but many orchestral
 libraries are authored on Windows with inconsistent casing. When the
 exact path misses, Resonata walks each directory level comparing
-lowercase names. Results cache per lowercase key across nested
-`#include` files. On Windows the filesystem itself is
-case-insensitive, so the direct check wins. Smoke-test any library
-with:
+lowercase names. Results are cached in `resolveCache` with non-blocking
+`atomic.Uint64` hit and miss counters, ensuring zero lock contention
+during `--parallel` multi-track renders.
+
+Smoke-test an SFZ library before rendering:
 
 ```bash
-./bin/resonata --load-sfz=samples/windows_authored_library/main.sfz --score=examples/test.json --output=out.wav --verbose
+./bin/resonata --load-sfz=samples/piano.sfz --score=examples/simple_score.json -o out.wav
 ```
 
-### Sample library best practices
+## Batch processing across operating systems
 
-Use forward slashes in SFZ files even on Windows. Avoid
-case-variant duplicates (`piano.wav` and `Piano.wav`) in one
-directory. Quote paths with spaces.
-
-## Filesystem layout (recommended)
-
-```text
-resonata/
-├── bin/resonata          # binary
-├── samples/
-│   ├── windows_authored_library/  # bundled cross-platform fixture
-│   └── custom/              # authored SFZ files
-├── examples/
-│   └── my_symphony.json
-└── renders/
-    └── my_symphony.wav
-```
-
-Keep large third-party libraries out of version control; only small
-fixtures belong in `samples/`. Bundled placeholder tones render the
-shipped examples on a clean checkout; replace them with a real library
-for production.
-
-## Line endings
-
-SFZ, JSON, and YAML inputs work with LF and CRLF endings. The SFZ
-include expander reads lines with a 1 MB buffer; the score parser
-selects YAML or JSON by file extension.
-
-## Performance
-
-Render speed scales with polyphony and effect tails. A 40 s dense
-score renders in about 5 s on a modern desktop (~0.1x realtime).
-Measure with `--benchmark` (10 in-memory renders, average reported)
-and profile with `--profile-cpu` plus `go tool pprof`.
-
-## Troubleshooting
-
-Include cycles (`a.sfz` -> `b.sfz` -> `a.sfz`) abort naming the
-repeated file; diamond includes expand once per branch. Samples found
-on Windows but not Linux indicate a casing mismatch: compare `ls`
-output against the `--verbose` sanitized path. Slow renders yield to
-process priority (`nice` on Linux, priority class on Windows); very
-large libraries can exceed RAM because samples decode fully on first
-use, so prefer one SFZ per instrument.
-
-## Building from source
-
-Prerequisites: Go 1.27 or later, no system libraries. The project
-does not use Git in its workflow (see the note in [README Overview](../README.md#overview));
-storage is handled externally, so start from the provided source folder:
-
-```bash
-CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/resonata ./cmd/resonata
-./bin/resonata --version
-```
-
-Tests and linters:
-
-```bash
-go vet ./...
-go test ./...
-gofmt -l pkg/ cmd/
-go test -run='FuzzSFZParse|FuzzScoreJSON|FuzzScoreYAML' ./pkg/instruments/sampler/ ./pkg/score/
-go test -run='FuzzMIDI' ./pkg/midi/
-go test -run='FuzzWAV' ./pkg/wav/
-# Nightly soak (600 s default): ./scripts/soak_fuzz.sh 600 (seeds: pkg/instruments/sampler/testdata/fuzz/FuzzSFZParse/)
-```
-
-## Containerization
-
-Minimal-container friendly (no runtime dependencies):
-
-```dockerfile
-FROM golang:1.27-alpine AS build
-WORKDIR /app
-COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /resonata ./cmd/resonata
-
-FROM alpine:3.19
-COPY --from=build /resonata /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/resonata"]
-```
-
-```bash
-docker build -t resonata .
-docker run -v $(pwd):/work -w /work resonata --score=examples/simple_score.json -o out.wav
-```
+The batch renderer (`--batch-dir=DIR`) traverses score directories
+using standard Go filepath abstractions. Path separators and forward/backslash
+differences are normalized transparently across platforms. Panics on
+individual malformed files are caught with `recover()` so batch queue
+execution never halts prematurely.

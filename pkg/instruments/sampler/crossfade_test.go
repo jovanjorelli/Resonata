@@ -52,8 +52,7 @@ func loadXFBinds(regions ...Region) *Sampler {
 	return s
 }
 
-// TestXfinParsing reads all eight crossfade opcodes with group-level
-// inheritance and region override.
+// TestXfinParsing verifies parsing crossfade curve opcodes across group and region hierarchies.
 func TestXfinParsing(t *testing.T) {
 	f, err := ParseSFZ([]byte("<group>\n" +
 		"xfin_lovel=60\nxfin_hivel=70\nxfout_lovel=60\nxfout_hivel=70\n" +
@@ -78,8 +77,7 @@ func TestXfinParsing(t *testing.T) {
 	}
 }
 
-// TestCrossfadeMidpoint blends two layers at equal power: velocity 65
-// sits halfway through the 60-70 zone, so both gains are ~0.707.
+// TestCrossfadeMidpoint verifies equal-power crossfade gain law at velocity layer midpoint.
 func TestCrossfadeMidpoint(t *testing.T) {
 	a, b := xfPair()
 	s := loadXFBinds(a, b)
@@ -97,8 +95,7 @@ func TestCrossfadeMidpoint(t *testing.T) {
 	}
 }
 
-// TestCrossfadeBoundaries parks the velocity at each end of the zone:
-// the outgoing layer plays full while the incoming layer is silent.
+// TestCrossfadeBoundaries verifies crossfade endpoints isolate individual velocity layers completely.
 func TestCrossfadeBoundaries(t *testing.T) {
 	a, b := xfPair()
 	s := loadXFBinds(a, b)
@@ -128,7 +125,7 @@ func TestCrossfadeBoundaries(t *testing.T) {
 	}
 }
 
-// TestCrossfadeNone keeps disjoint layers on a single full-gain voice.
+// TestCrossfadeNone verifies regions without crossfade opcodes render at full unity gain.
 func TestCrossfadeNone(t *testing.T) {
 	a := xfRegion("a.wav", 60, 60, 1, 63, 0, 0, 127, 127)
 	b := xfRegion("b.wav", 60, 60, 64, 127, 0, 0, 127, 127)
@@ -150,9 +147,7 @@ func TestCrossfadeNone(t *testing.T) {
 	}
 }
 
-// TestCrossfadeRoundRobin layers two round-robin pairs across one
-// velocity zone: each trigger sounds one take per layer, and the takes
-// advance together step by step.
+// TestCrossfadeRoundRobin verifies composite crossfading across round-robin sequence layers.
 func TestCrossfadeRoundRobin(t *testing.T) {
 	mk := func(path string, pos, loVel, hiVel, xfinLo, xfinHi, xfoutLo, xfoutHi int) Region {
 		r := xfRegion(path, 60, 60, loVel, hiVel, xfinLo, xfinHi, xfoutLo, xfoutHi)
@@ -176,9 +171,7 @@ func TestCrossfadeRoundRobin(t *testing.T) {
 	}
 }
 
-// TestCrossfadeRandom composes probability with blending: over one
-// hundred seeded triggers in the overlap zone, both-layers, A-only,
-// and B-only outcomes all occur.
+// TestCrossfadeRandom verifies composition of crossfade gain curves with random probability selection.
 func TestCrossfadeRandom(t *testing.T) {
 	a, b := xfPair()
 	a.LoRand, a.HiRand = 0, 0.6
@@ -208,9 +201,7 @@ func TestCrossfadeRandom(t *testing.T) {
 	t.Logf("outcomes both=%d a=%d b=%d", both, onlyA, onlyB)
 }
 
-// TestCrossfadePoolExhaustion drops the quiet layer when only one
-// voice is free: fifteen foreign voices fill the pool, then the
-// overlap trigger keeps the dominant layer and drops the rest.
+// TestCrossfadePoolExhaustion verifies quieter crossfade layer is dropped when voice pool is exhausted.
 func TestCrossfadePoolExhaustion(t *testing.T) {
 	a, b := xfPair()
 	c := xfRegion("c.wav", 61, 127, 0, 127, 0, 0, 127, 127)
@@ -237,8 +228,7 @@ func TestCrossfadePoolExhaustion(t *testing.T) {
 	}
 }
 
-// TestCrossfadeZeroAlloc hammers the overlap zone with zero heap
-// allocations across matching, gain math, and trigger collection.
+// TestCrossfadeZeroAlloc proves velocity crossfade evaluation performs zero heap allocations.
 func TestCrossfadeZeroAlloc(t *testing.T) {
 	a, b := xfPair()
 	s := loadXFBinds(a, b)

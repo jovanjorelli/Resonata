@@ -63,10 +63,7 @@ func renderAll(t *testing.T, parallel bool) []float32 {
 	return got
 }
 
-// TestParallelRaceStress renders a multi-track score with parallel
-// voicing ten times and demands byte-identical output every run: shared
-// worker pool, per-track state, and sequential summing must hold under
-// the race detector across repeated runs.
+// TestParallelRaceStress proves parallel track rendering is race-free and byte-identical to sequential rendering.
 func TestParallelRaceStress(t *testing.T) {
 	ref := renderAll(t, false)
 	for i := 0; i < 10; i++ {

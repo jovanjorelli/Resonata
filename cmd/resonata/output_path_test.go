@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestOutputPathForBatchNextToInput verifies batch output WAV path derives from input score basename.
 func TestOutputPathForBatchNextToInput(t *testing.T) {
 	got := outputPathForBatch(filepath.Join("scores", "piece.json"), "")
 	want := filepath.Join("scores", "piece.wav")
@@ -14,6 +15,7 @@ func TestOutputPathForBatchNextToInput(t *testing.T) {
 	}
 }
 
+// TestOutputPathForBatchMIDIBase verifies batch output WAV path derives from input MIDI basename.
 func TestOutputPathForBatchMIDIBase(t *testing.T) {
 	got := outputPathForBatch(filepath.Join("scores", "song.mid"), "")
 	want := filepath.Join("scores", "song.wav")
@@ -22,6 +24,7 @@ func TestOutputPathForBatchMIDIBase(t *testing.T) {
 	}
 }
 
+// TestOutputPathForBatchExistingDir verifies output path resolution when output specifies existing directory.
 func TestOutputPathForBatchExistingDir(t *testing.T) {
 	dir := t.TempDir()
 	got := outputPathForBatch(filepath.Join("scores", "piece.json"), dir)
@@ -31,6 +34,7 @@ func TestOutputPathForBatchExistingDir(t *testing.T) {
 	}
 }
 
+// TestOutputPathForBatchFilePath verifies output path resolution when explicit output file is given.
 func TestOutputPathForBatchFilePath(t *testing.T) {
 	// outDir naming a non-directory is used verbatim as the file path.
 	got := outputPathForBatch(filepath.Join("scores", "a.json"),
@@ -42,6 +46,7 @@ func TestOutputPathForBatchFilePath(t *testing.T) {
 	_ = os.MkdirTemp
 }
 
+// TestAbs32 verifies absolute value function for 32-bit floating point numbers.
 func TestAbs32(t *testing.T) {
 	if got := abs32(-1.5); got != 1.5 {
 		t.Fatalf("abs32(-1.5) = %v", got)

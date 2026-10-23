@@ -9,6 +9,8 @@
 package mixer
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"sync"
@@ -77,8 +79,10 @@ type Mixer struct {
 	clipper     SoftClipper
 	limiter     *dsp.Limiter // mastering limiter, allocated once; runs only when enabled
 	useLimiter  bool         // route the master bus through the limiter after the clipper
-	useParallel bool         // voice tracks concurrently; the sum stays sequential
+	useParallel bool
 	parWg       sync.WaitGroup
+	parErrMu    sync.Mutex
+	parErr      error
 	monoBassHz  float32       // mono-bass crossover frequency in Hz; 0 disables
 	monoBassA   float32       // precomputed one-pole coefficient for monoBassHz
 	bassYL      float32       // low-band state, left (persists across blocks)
@@ -165,7 +169,14 @@ func (m *Mixer) SetVolume(i int, volume float32) {
 	}
 }
 
-// SetMuted mutes or unmutes strip i.
+// SetTrackInstrument attaches an instrument to strip i without allocating, preserving zero-allocation guarantees.
+func (m *Mixer) SetTrackInstrument(i int, instrument instruments.Instrument) {
+	if m.valid(i) && instrument != nil {
+		m.tracks[i].instrument = instrument
+	}
+}
+
+// SetMuted mutes or unmutes strip i while preserving track state and routing with zero heap allocations.
 func (m *Mixer) SetMuted(i int, muted bool) {
 	if m.valid(i) {
 		m.tracks[i].muted = muted
@@ -401,9 +412,6 @@ var (
 	parJobs chan parallelJob
 )
 
-// ensureParallelPool starts the shared voicing workers once: one per
-// logical CPU, bounded so small machines and huge track counts stay
-// sane. The job channel is sized for large batches.
 func ensureParallelPool() {
 	parOnce.Do(func() {
 		nw := runtime.NumCPU()
@@ -417,12 +425,32 @@ func ensureParallelPool() {
 		for w := 0; w < nw; w++ {
 			go func() {
 				for j := range parJobs {
-					j.m.renderTrack(j.track, j.n, j.dt)
-					j.m.parWg.Done()
+					func() {
+						defer func() {
+							if r := recover(); r != nil {
+								j.m.setParallelErr(fmt.Errorf("track %d panic: %v", j.track, r))
+							}
+							j.m.parWg.Done()
+						}()
+						j.m.renderTrack(j.track, j.n, j.dt)
+					}()
 				}
 			}()
 		}
 	})
+}
+
+func (m *Mixer) setParallelErr(err error) {
+	m.parErrMu.Lock()
+	m.parErr = errors.Join(m.parErr, err)
+	m.parErrMu.Unlock()
+}
+
+// Err returns any joined error recorded across parallel track worker goroutines.
+func (m *Mixer) Err() error {
+	m.parErrMu.Lock()
+	defer m.parErrMu.Unlock()
+	return m.parErr
 }
 
 // renderTrack voices one track's instrument into its own stereo bus.
@@ -431,12 +459,13 @@ func ensureParallelPool() {
 // headers are re-cut per block from arena-owned arrays: no allocation.
 func (m *Mixer) renderTrack(i int, n int, dt float64) {
 	tr := &m.tracks[i]
+	buf := tr.buffer[:2*n]
+	clear(buf)
 	tr.scratch.Left = tr.scratchL[:n]
 	tr.scratch.Right = tr.scratchR[:n]
 	clear(tr.scratch.Left)
 	clear(tr.scratch.Right)
 	tr.instrument.Process(&tr.scratch, dt)
-	buf := tr.buffer[:2*n]
 	for j := 0; j < n; j++ {
 		buf[2*j] = tr.scratch.Left[j]
 		buf[2*j+1] = tr.scratch.Right[j]
@@ -451,12 +480,10 @@ func (m *Mixer) SetParallel(enabled bool) { m.useParallel = enabled }
 // Parallel reports whether parallel voicing is enabled.
 func (m *Mixer) Parallel() bool { return m.useParallel }
 
-// Process renders blockSize frames of every unmuted track into its bus,
-// sums the buses into the interleaved stereo master plus one reverb send
-// bus per acoustic space (send × track audio), returns each space's FDN
-// wet signal into the master, adds each track echo's wet return, and
-// soft-clips last. The result is available via Master until the next
-// call. blockSize is clamped to [1, maxBlock]; nothing allocates.
+// Process renders blockSize frames of every unmuted track into its bus, enforcing the
+// zero-allocation invariant (pre-allocated arena, no heap allocations in steady-state loop),
+// worker synchronization boundaries via parWg, and panic isolation recording worker errors in parErr.
+// The result is available via Master until the next call. blockSize is clamped to [1, maxBlock].
 func (m *Mixer) Process(blockSize int) {
 	n := min(blockSize, m.maxBlock)
 	if n < 1 {
@@ -494,11 +521,11 @@ func (m *Mixer) Process(blockSize int) {
 			continue
 		}
 		if !m.useParallel {
+			buf := tr.buffer[:2*n]
+			clear(buf)
 			m.render.SetLen(n)
 			m.render.Clear()
 			tr.instrument.Process(m.render, dt)
-			// Interleave the planar render into the track's stereo bus.
-			buf := tr.buffer[:2*n]
 			for j := 0; j < n; j++ {
 				buf[2*j] = m.render.Left[j]
 				buf[2*j+1] = m.render.Right[j]

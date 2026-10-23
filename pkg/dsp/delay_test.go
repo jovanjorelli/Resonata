@@ -24,8 +24,7 @@ func peakAt(b []float32, idx int) float32 {
 	return b[idx]
 }
 
-// TestDelayBPMSync checks the musical time formula to plus or minus one
-// sample across subdivisions and tempos.
+// TestDelayBPMSync verifies musical time subdivision formula calculating delay tap lengths in samples at given BPM.
 func TestDelayBPMSync(t *testing.T) {
 	const sr = 48000
 	cases := []struct {
@@ -63,7 +62,7 @@ func TestDelayBPMSync(t *testing.T) {
 	}
 }
 
-// TestDelaySubdivisionNames checks the score DSL vocabulary.
+// TestDelaySubdivisionNames verifies rhythmic subdivision string parsing and mapping to beat multipliers.
 func TestDelaySubdivisionNames(t *testing.T) {
 	for name, want := range map[string]Subdivision{
 		"1/1": SubdivisionWhole, "1/2": SubdivisionHalf, "1/4": SubdivisionQuarter,
@@ -80,8 +79,7 @@ func TestDelaySubdivisionNames(t *testing.T) {
 	}
 }
 
-// TestDelayStereoEcho checks discrete repeats at multiples of the tap
-// with geometric feedback decay on the same channel.
+// TestDelayStereoEcho verifies discrete echo repeats at multiples of delay tap length with exponential gain decay.
 func TestDelayStereoEcho(t *testing.T) {
 	const sr = 48000
 	d := NewStereoDelay(sr, MaxDelaySeconds)
@@ -111,9 +109,7 @@ func TestDelayStereoEcho(t *testing.T) {
 	}
 }
 
-// TestDelayPingPong checks the cross-feedback matrix: a left impulse
-// replays on the same channel at one tap, then bounces right at two
-// taps, left at three, alternating across the stereo image.
+// TestDelayPingPong verifies cross-feedback routing matrix alternating reflections between left and right channels.
 func TestDelayPingPong(t *testing.T) {
 	const sr = 48000
 	d := NewStereoDelay(sr, MaxDelaySeconds)
@@ -142,9 +138,7 @@ func TestDelayPingPong(t *testing.T) {
 	}
 }
 
-// TestDelayDamping checks analog warmth: stronger damping (lower cutoff)
-// darkens repeats, measured as a lower sample-to-sample difference ratio
-// on late echoes excited by broadband noise.
+// TestDelayDamping verifies 1-pole lowpass filter HF damping attenuation inside the delay feedback loop.
 func TestDelayDamping(t *testing.T) {
 	const sr = 48000
 	hfRatio := func(fc float32) float64 {
@@ -183,8 +177,7 @@ func TestDelayDamping(t *testing.T) {
 	}
 }
 
-// TestDelayWetDryMix checks the mix law on the first dry frame and the
-// planar/interleaved helpers against per-frame processing.
+// TestDelayWetDryMix verifies linear dry/wet crossfade law [0, 1] across planar and interleaved buffers.
 func TestDelayWetDryMix(t *testing.T) {
 	const sr = 48000
 	d := NewStereoDelay(sr, MaxDelaySeconds)
@@ -229,7 +222,7 @@ func TestDelayWetDryMix(t *testing.T) {
 	}
 }
 
-// TestDelayReset checks state clearing.
+// TestDelayReset verifies clearing delay ring buffers and internal filter states.
 func TestDelayReset(t *testing.T) {
 	d := NewStereoDelay(48000, MaxDelaySeconds)
 	d.Configure(DelayConfig{Mode: DelayModePingPong, DelaySeconds: 0.02, Feedback: 0.6, DampingHz: 4000, Wet: 1}, 120)
@@ -246,7 +239,7 @@ func TestDelayReset(t *testing.T) {
 	}
 }
 
-// TestDelayConfigClamp checks feedback, wet, and length clamping.
+// TestDelayConfigClamp verifies feedback [0, 0.999], wet [0, 1], and maximum delay buffer length clamping.
 func TestDelayConfigClamp(t *testing.T) {
 	d := NewStereoDelay(48000, 1.0)
 	d.Configure(DelayConfig{Feedback: 5, Wet: 5, DelaySeconds: 99}, 120)
@@ -265,7 +258,7 @@ func TestDelayConfigClamp(t *testing.T) {
 	}
 }
 
-// TestDelayZeroAlloc checks the hot path performs no allocations.
+// TestDelayZeroAlloc proves steady-state stereo delay processing loop performs zero heap allocations.
 func TestDelayZeroAlloc(t *testing.T) {
 	d := NewStereoDelay(48000, MaxDelaySeconds)
 	d.Configure(DelayConfig{Mode: DelayModePingPong, Subdivision: SubdivisionEighthD, Feedback: 0.6, DampingHz: 4000, Wet: 0.4}, 120)
@@ -293,5 +286,15 @@ func TestDelayZeroAlloc(t *testing.T) {
 		d.Configure(DelayConfig{Mode: DelayModeStereo, DelaySeconds: 0.3, Feedback: 0.5, DampingHz: 4000, Wet: 0.5}, 120)
 	}); allocs != 0 {
 		t.Fatalf("Configure allocates %v per call, want 0", allocs)
+	}
+}
+
+// TestDelayZeroLengthPassthrough verifies zero delay length acts as instantaneous dry passthrough.
+func TestDelayZeroLengthPassthrough(t *testing.T) {
+	d := NewStereoDelay(48000, 1.0)
+	d.Configure(DelayConfig{DelaySeconds: 0, Wet: 0.5}, 120)
+	outL, outR := d.ProcessFrame(0.8, -0.6)
+	if outL != 0.8 || outR != -0.6 {
+		t.Fatalf("zero delay passthrough: got %v/%v, want 0.8/-0.6", outL, outR)
 	}
 }

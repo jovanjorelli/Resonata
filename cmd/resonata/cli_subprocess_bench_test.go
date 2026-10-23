@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// TestCLIBenchmarkFlag verifies CLI benchmark flag output reporting average render time.
 func TestCLIBenchmarkFlag(t *testing.T) {
 	bin := buildResonataBinary(t)
 	dir := t.TempDir()
@@ -26,6 +27,7 @@ func TestCLIBenchmarkFlag(t *testing.T) {
 	}
 }
 
+// TestCLIProfileFlags verifies CLI profile flags generating valid pprof CPU and memory profiles.
 func TestCLIProfileFlags(t *testing.T) {
 	bin := buildResonataBinary(t)
 	dir := t.TempDir()

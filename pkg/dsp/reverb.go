@@ -140,9 +140,22 @@ type reverbAllpass struct {
 
 // process advances the allpass by one sample.
 func (a *reverbAllpass) process(x float32) float32 {
+	if math.IsNaN(float64(x)) || math.IsInf(float64(x), 0) {
+		x = 0
+	}
 	w := a.line.read()
+	if math.IsNaN(float64(w)) || math.IsInf(float64(w), 0) {
+		w = 0
+	}
 	y := w - a.gain*x
-	a.line.write(a.gain2*x + a.gain*w)
+	toWrite := a.gain2*x + a.gain*w
+	if math.IsNaN(float64(toWrite)) || math.IsInf(float64(toWrite), 0) {
+		toWrite = 0
+	}
+	a.line.write(toWrite)
+	if math.IsNaN(float64(y)) || math.IsInf(float64(y), 0) {
+		y = 0
+	}
 	return y
 }
 
@@ -279,10 +292,16 @@ func (r *Reverb) Reset() {
 	r.preR.reset()
 }
 
-// ProcessFrameWet runs one stereo frame through the network and returns
-// the wet signal only (send/return style, as used by the mixer).
+// ProcessFrameWet runs one stereo frame (inL, inR in linear amplitude) through the 8-line
+// FDN unitary matrix (orthonormal Hadamard matrix) with anti-denormal flush to zero (< 1e-25)
+// and four Schroeder allpass diffusers per channel, returning the wet signal.
 func (r *Reverb) ProcessFrameWet(inL, inR float32) (float32, float32) {
-	// Pre-delay: air between the source and the room.
+	if math.IsNaN(float64(inL)) || math.IsInf(float64(inL), 0) {
+		inL = 0
+	}
+	if math.IsNaN(float64(inR)) || math.IsInf(float64(inR), 0) {
+		inR = 0
+	}
 	xL, xR := inL, inR
 	if r.preL.length > 0 {
 		xL = r.preL.read()
@@ -291,19 +310,23 @@ func (r *Reverb) ProcessFrameWet(inL, inR float32) (float32, float32) {
 		r.preR.write(inR)
 	}
 
-	// Read the eight line outputs and run the air-damping one-pole
-	// inside the feedback path:  d = y·(1-damp) + d_prev·damp.
 	var y, d [8]float32
 	damp := r.dampCoef()
 	for i := range r.lines {
-		y[i] = r.lines[i].read()
+		v := r.lines[i].read()
+		if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+			v = 0
+		}
+		y[i] = v
 		ln := &r.lines[i]
-		ln.dampY = y[i]*(1-damp) + ln.dampY*damp
-		d[i] = ln.dampY
+		newDamp := y[i]*(1-damp) + ln.dampY*damp
+		if math.IsNaN(float64(newDamp)) || math.IsInf(float64(newDamp), 0) || math.Abs(float64(newDamp)) < 1e-25 {
+			newDamp = 0
+		}
+		ln.dampY = newDamp
+		d[i] = newDamp
 	}
 
-	// FDN feedback: orthogonal Hadamard mix scaled by the loop gain,
-	// plus fresh input injected into each channel's bank.
 	for i := range r.lines {
 		mix := float32(0)
 		row := &r.matrix[i]
@@ -314,22 +337,29 @@ func (r *Reverb) ProcessFrameWet(inL, inR float32) (float32, float32) {
 		if i >= 4 {
 			x = xR
 		}
-		r.lines[i].write(mix*r.feedback + x*r.inGain)
+		toWrite := mix*r.feedback + x*r.inGain
+		if math.IsNaN(float64(toWrite)) || math.IsInf(float64(toWrite), 0) {
+			toWrite = 0
+		}
+		r.lines[i].write(toWrite)
 	}
 
-	// Bank sums are the raw wet taps.
 	wetL := (y[0] + y[1] + y[2] + y[3]) * r.outScale
 	wetR := (y[4] + y[5] + y[6] + y[7]) * r.outScale
 
-	// Diffusion: series allpasses smear the taps into a dense tail.
 	for i := range r.allL {
 		wetL = r.allL[i].process(wetL)
+		if math.IsNaN(float64(wetL)) || math.IsInf(float64(wetL), 0) {
+			wetL = 0
+		}
 	}
 	for i := range r.allR {
 		wetR = r.allR[i].process(wetR)
+		if math.IsNaN(float64(wetR)) || math.IsInf(float64(wetR), 0) {
+			wetR = 0
+		}
 	}
 
-	// Stereo width: 1 keeps the banks apart, 0 collapses to mono.
 	mono := (wetL + wetR) * 0.5
 	w := r.widthCoef
 	return mono + (wetL-mono)*w, mono + (wetR-mono)*w
@@ -338,15 +368,14 @@ func (r *Reverb) ProcessFrameWet(inL, inR float32) (float32, float32) {
 // dampCoef returns the air-damping coefficient from params.
 func (r *Reverb) dampCoef() float32 { return r.params.Damping }
 
-// ProcessFrame returns one frame of the full wet/dry mix per params.
+// ProcessFrame returns one stereo frame of the full wet/dry mix in linear amplitude [0, 1] through the FDN network with zero allocations.
 func (r *Reverb) ProcessFrame(inL, inR float32) (float32, float32) {
 	wL, wR := r.ProcessFrameWet(inL, inR)
 	return inL*r.params.Dry + wL*r.params.Wet,
 		inR*r.params.Dry + wR*r.params.Wet
 }
 
-// ProcessStereo processes a planar stereo buffer in place with the
-// wet/dry mix.
+// ProcessStereo processes a planar stereo buffer in place with the wet/dry mix through the FDN network with zero allocations.
 func (r *Reverb) ProcessStereo(buf *StereoBuffer) {
 	if buf == nil {
 		return

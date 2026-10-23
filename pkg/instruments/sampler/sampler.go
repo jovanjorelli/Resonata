@@ -1025,8 +1025,6 @@ func (s *Sampler) ActiveVoices() int {
 	return count
 }
 
-// allocVoice picks a voice for a new note: a free one, else the oldest
-// voice in release stage, else the oldest sounding voice.
 func (s *Sampler) allocVoice() *Voice {
 	for i := range s.voices {
 		if !s.voices[i].Active {
@@ -1036,7 +1034,25 @@ func (s *Sampler) allocVoice() *Voice {
 	var oldest *Voice
 	for i := range s.voices {
 		v := &s.voices[i]
-		if v.releasing && (oldest == nil || v.ReleaseTime < oldest.ReleaseTime) {
+		if v.releasing && !v.isStealing && (oldest == nil || v.ReleaseTime < oldest.ReleaseTime) {
+			oldest = v
+		}
+	}
+	if oldest != nil {
+		return oldest
+	}
+	for i := range s.voices {
+		v := &s.voices[i]
+		if !v.isStealing && (oldest == nil || v.startTime < oldest.startTime) {
+			oldest = v
+		}
+	}
+	if oldest != nil {
+		return oldest
+	}
+	for i := range s.voices {
+		v := &s.voices[i]
+		if v.stealFree && (oldest == nil || v.startTime < oldest.startTime) {
 			oldest = v
 		}
 	}

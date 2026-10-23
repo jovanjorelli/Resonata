@@ -137,8 +137,7 @@ func TestR2MemProfileDevFull(t *testing.T) {
 	}
 }
 
-// TestR2EngineTrackPeakSmoke keeps the engine import referenced for
-// render-path helpers used above.
+// TestR2EngineTrackPeakSmoke verifies engine track rendering peak measurement without failure.
 func TestR2EngineTrackPeakSmoke(t *testing.T) {
 	eng, err := engine.New(minimalScore(), 48000, engine.DefaultBlockSize)
 	if err != nil {

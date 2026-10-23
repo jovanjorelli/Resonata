@@ -22,6 +22,7 @@ func minimalScore() *score.Score {
 	}
 }
 
+// TestRenderUnknownMode verifies error handling when unrecognized render mode is requested.
 func TestRenderUnknownMode(t *testing.T) {
 	cfg := &CLIConfig{RenderMode: "realtime", BitDepth: "24", Channels: 2, SampleRate: 48000,
 		OutputPath: filepath.Join(t.TempDir(), "o.wav"), ReverbPreset: "none"}
@@ -30,6 +31,7 @@ func TestRenderUnknownMode(t *testing.T) {
 	}
 }
 
+// TestRenderBadBitDepth verifies error handling when unsupported bit depth is specified.
 func TestRenderBadBitDepth(t *testing.T) {
 	cfg := &CLIConfig{RenderMode: "offline", BitDepth: "64", Channels: 2, SampleRate: 48000,
 		OutputPath: filepath.Join(t.TempDir(), "o.wav"), ReverbPreset: "none"}
@@ -38,6 +40,7 @@ func TestRenderBadBitDepth(t *testing.T) {
 	}
 }
 
+// TestRenderWritesWAV verifies rendering score to disk generates valid non-empty WAV file.
 func TestRenderWritesWAV(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "o.wav")
 	cfg := &CLIConfig{RenderMode: "offline", BitDepth: "16", Channels: 1, SampleRate: 44100,
@@ -55,6 +58,7 @@ func TestRenderWritesWAV(t *testing.T) {
 	}
 }
 
+// TestMasterGainClamp verifies master gain parameter clamping to valid [0, 1] range.
 func TestMasterGainClamp(t *testing.T) {
 	// Gains outside [0,1] clamp instead of failing; peak must stay bounded.
 	for _, g := range []float64{2.0, -1.0} {
@@ -71,6 +75,7 @@ func TestMasterGainClamp(t *testing.T) {
 	}
 }
 
+// TestApplyReverbBypass verifies bypassing master reverb when preset is set to none or dry.
 func TestApplyReverbBypass(t *testing.T) {
 	for _, name := range []string{"none", "off", "dry"} {
 		eng, err := engine.New(minimalScore(), 48000, engine.DefaultBlockSize)
@@ -84,6 +89,7 @@ func TestApplyReverbBypass(t *testing.T) {
 	}
 }
 
+// TestApplyReverbUnknownKeepsDefault verifies unrecognized reverb preset falls back to default space.
 func TestApplyReverbUnknownKeepsDefault(t *testing.T) {
 	eng, err := engine.New(minimalScore(), 48000, engine.DefaultBlockSize)
 	if err != nil {

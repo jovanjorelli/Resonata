@@ -265,9 +265,6 @@ func validateDelay(d *TrackDelay, label string) []error {
 	if !(d.Wet >= 0) || d.Wet > 1 {
 		errs = append(errs, fmt.Errorf("%s: delay.wet must be in [0, 1], got %g", label, d.Wet))
 	}
-	if !(d.Send >= 0) || d.Send > 1 {
-		errs = append(errs, fmt.Errorf("%s: delay.send must be in [0, 1], got %g", label, d.Send))
-	}
 	return errs
 }
 
@@ -307,8 +304,8 @@ func Warnings(s *Score) []string {
 	for i := range s.Tracks {
 		t := &s.Tracks[i]
 		label := fmt.Sprintf("tracks[%d] %q", i, t.ID)
-		if t.Delay != nil && t.Delay.Wet == 0 && t.Delay.Send > 0 {
-			out = append(out, fmt.Sprintf("%s: delay.wet is 0, so the delay will be inaudible (delay.send is deprecated and has no effect)", label))
+		if t.Delay != nil && t.Delay.Wet == 0 {
+			out = append(out, fmt.Sprintf("%s: delay.wet is 0, so the delay will be inaudible", label))
 		}
 	}
 	return out

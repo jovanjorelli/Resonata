@@ -21,6 +21,7 @@ func writeScore(t *testing.T, dir, name string) string {
 	return p
 }
 
+// TestBatchIsolation verifies state isolation between sequentially rendered scores in batch mode.
 func TestBatchIsolation(t *testing.T) {
 	in := t.TempDir()
 	out := t.TempDir()
@@ -39,6 +40,7 @@ func TestBatchIsolation(t *testing.T) {
 	}
 }
 
+// TestBatchEmptyDirFails verifies batch rendering fails when target directory contains no score files.
 func TestBatchEmptyDirFails(t *testing.T) {
 	cfg := &CLIConfig{BatchDir: t.TempDir(), OutputPath: t.TempDir()}
 	if err := runBatch(cfg); err == nil {
@@ -46,6 +48,40 @@ func TestBatchEmptyDirFails(t *testing.T) {
 	}
 }
 
+// TestBatchIgnoresYAML verifies batch mode ignores non-JSON/non-MIDI files like YAML.
+func TestBatchIgnoresYAML(t *testing.T) {
+	in := t.TempDir()
+	out := t.TempDir()
+	writeScore(t, in, "real.json")
+	if err := os.WriteFile(filepath.Join(in, "ignored.yaml"), []byte("title: x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(in, "ignored.yml"), []byte("title: x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &CLIConfig{BatchDir: in, OutputPath: out, ReverbPreset: "none",
+		BitDepth: "16", Channels: 1, SampleRate: 44100, RenderMode: "offline", MasterGain: 1.0}
+	if err := runBatch(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "real.wav")); err != nil {
+		t.Fatal("real.wav missing")
+	}
+	if _, err := os.Stat(filepath.Join(out, "ignored.wav")); !os.IsNotExist(err) {
+		t.Fatal("ignored.wav should not exist")
+	}
+
+	yamlOnly := t.TempDir()
+	if err := os.WriteFile(filepath.Join(yamlOnly, "only.yaml"), []byte("title: x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfgOnly := &CLIConfig{BatchDir: yamlOnly, OutputPath: out}
+	if err := runBatch(cfgOnly); err == nil {
+		t.Fatal("batch on yaml-only dir should fail")
+	}
+}
+
+// TestImportMIDIScoreForBatch verifies importing MIDI files directly during batch rendering.
 func TestImportMIDIScoreForBatch(t *testing.T) {
 	s, err := importMIDIScoreForBatch("../../test_data/mahler_symphony.mid")
 	if err != nil {
@@ -62,6 +98,7 @@ func TestImportMIDIScoreForBatch(t *testing.T) {
 	}
 }
 
+// TestExportMIDIFileRoundTrip verifies round-trip MIDI file export from score data.
 func TestExportMIDIFileRoundTrip(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "e.mid")
 	if err := exportMIDIFile(minimalScore(), out); err != nil {

@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestWriteVLQ verifies variable-length quantity encoding matches standard MIDI specification.
 func TestWriteVLQ(t *testing.T) {
 	vectors := []struct {
 		value uint32
@@ -38,6 +39,7 @@ func TestWriteVLQ(t *testing.T) {
 	}
 }
 
+// TestEncodeTrackRunningStatus verifies running status omission in encoded MIDI track chunks.
 func TestEncodeTrackRunningStatus(t *testing.T) {
 	events := []Event{
 		{Tick: 0, Type: EventNoteOn, Channel: 0, Data1: 60, Data2: 100},
@@ -67,6 +69,7 @@ func TestEncodeTrackRunningStatus(t *testing.T) {
 	}
 }
 
+// TestEncodeTrackSameTickOrdering verifies deterministic event ordering for events sharing identical delta ticks.
 func TestEncodeTrackSameTickOrdering(t *testing.T) {
 	// Note-off must precede the retriggered note-on at the same tick, and
 	// end-of-track stays last.
@@ -89,6 +92,7 @@ func TestEncodeTrackSameTickOrdering(t *testing.T) {
 	}
 }
 
+// TestWriteFileRoundTrip verifies encoding a MIDI file and reading it back reproduces identical events.
 func TestWriteFileRoundTrip(t *testing.T) {
 	in := &File{
 		Header: Header{Format: 1, Tracks: 2, TicksPerQuarter: 480},
@@ -144,6 +148,7 @@ func TestWriteFileRoundTrip(t *testing.T) {
 	}
 }
 
+// TestWriteFileFormat0Flattens verifies format 0 export flattens multiple tracks into a single sequential track.
 func TestWriteFileFormat0Flattens(t *testing.T) {
 	in := &File{
 		Header: Header{Format: 0, TicksPerQuarter: 96},

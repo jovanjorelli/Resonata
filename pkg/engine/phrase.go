@@ -146,8 +146,7 @@ func (e *Engine) assignRooms(s *score.Score) {
 				best, bestD = k, d
 			}
 		}
-		// Survivor indexes above the victim shift down with the removal,
-		// so repoint at the post-removal position.
+		entries[best].uses += entries[victim].uses
 		survivor := best
 		if survivor > victim {
 			survivor--

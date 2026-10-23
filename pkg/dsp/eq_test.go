@@ -27,9 +27,7 @@ func dbOf(v float64) float64 {
 	return 20 * math.Log10(v)
 }
 
-// TestRBJSweep drives sine sweeps through every RBJ band type and checks
-// the measured response against the cookbook transfer function: exact
-// peaks and nulls at the specified Hz/dB.
+// TestRBJSweep verifies RBJ biquad Direct Form I response across sine sweeps for lowpass, highpass, bandpass, and shelves.
 func TestRBJSweep(t *testing.T) {
 	const fs = 48000
 	configs := []*Biquad{
@@ -104,8 +102,7 @@ func TestRBJSweep(t *testing.T) {
 	}
 }
 
-// TestEQCascade checks the four-stage track sculpt end to end: the
-// measured response equals the product of the stage transfer functions.
+// TestEQCascade verifies 4-stage cascade (HPF -> Low Shelf -> Mid Peak -> High Shelf) composite frequency response.
 func TestEQCascade(t *testing.T) {
 	const fs = 48000
 	spec := EQSpec{
@@ -165,8 +162,7 @@ func TestEQCascade(t *testing.T) {
 	}
 }
 
-// TestEQProcessMatchesSample checks the block APIs against the scalar
-// path and verifies zero allocations.
+// TestEQProcessMatchesSample verifies block-based buffer filtering matches scalar ProcessSample execution.
 func TestEQProcessMatchesSample(t *testing.T) {
 	const fs = 48000
 	spec := EQSpec{

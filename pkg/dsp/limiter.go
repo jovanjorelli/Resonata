@@ -282,15 +282,17 @@ func (l *Limiter) ProcessInterleaved(b []float32) {
 //	gain   -> target instantly down, smoothed up
 //	out    = x delayed 5 ms · gain, clamped to ±ceiling
 func (l *Limiter) processFrame(inL, inR float32) (float32, float32) {
-	// Loudness estimate of the SOURCE program (before pre-gain) drives
-	// auto-gain; measuring post-gain would make the loop self-canceling.
+	inL = sanitizeF32(inL)
+	inR = sanitizeF32(inR)
 	l.updateLoudness((inL + inR) * 0.5)
 
 	g := l.autoGain
+	if math.IsNaN(float64(g)) || g <= 0 {
+		g = 1
+		l.autoGain = 1
+	}
 	xL, xR := inL*g, inR*g
 
-	// Stereo-linked peak detector (one-pole follower, spec form):
-	//   env = input + alpha·(env - input), alpha_att when rising.
 	peak := absF32(xL)
 	if a := absF32(xR); a > peak {
 		peak = a
@@ -301,8 +303,6 @@ func (l *Limiter) processFrame(inL, inR float32) (float32, float32) {
 		l.env = peak + l.alphaRel*(l.env-peak)
 	}
 
-	// Guaranteed envelope: never below the instantaneous peak, captured
-	// into the ring mirroring the audio delay.
 	guaranteed := l.env
 	if peak > guaranteed {
 		guaranteed = peak
@@ -311,8 +311,6 @@ func (l *Limiter) processFrame(inL, inR float32) (float32, float32) {
 	envDelayed := l.envRing[readIdx]
 	l.envRing[l.delay.writeIdx] = guaranteed
 
-	// Gain computer: soft knee for musical compression, hard safety cap
-	// from the delayed envelope, instant reduction, smooth recovery.
 	target := l.kneeGain(l.env)
 	if envDelayed > envFloor {
 		if safe := l.ceiling / envDelayed; safe < target {
@@ -328,16 +326,12 @@ func (l *Limiter) processFrame(inL, inR float32) (float32, float32) {
 		l.gain += l.alphaGainRel * (target - l.gain)
 	}
 
-	// Apply the gain to the audio exiting the lookahead delay.
 	outL, outR := l.delay.Write(xL, xR)
 	outL = clampCeiling(outL*l.gain, l.ceiling)
 	outR = clampCeiling(outR*l.gain, l.ceiling)
 	return outL, outR
 }
 
-// kneeGain is the static soft-knee characteristic: unity below the knee,
-// a quadratic blend inside it, and slope -1 (peak limiting) above the
-// threshold.
 func (l *Limiter) kneeGain(env float32) float32 {
 	if env <= l.kneeStart {
 		return 1
@@ -353,8 +347,6 @@ func (l *Limiter) kneeGain(env float32) float32 {
 	return float32(math.Pow(10, float64(gainDB)/20))
 }
 
-// updateLoudness folds one mono sample into the gated loudness estimate
-// and adapts the auto-gain pre-amplifier toward the LUFS target.
 func (l *Limiter) updateLoudness(mono float32) {
 	if !l.autoEnabled {
 		return
@@ -362,18 +354,33 @@ func (l *Limiter) updateLoudness(mono float32) {
 	hp := l.loudHP.ProcessSample(mono)
 	inst := hp * hp
 	if inst <= l.loudGateMS && l.loudMS <= l.loudGateMS {
-		return // gated: silence does not drag the estimate down
+		return
 	}
 	l.loudMS += l.alphaLoud * (inst - l.loudMS)
-	if l.loudMS <= l.loudGateMS {
+	if l.loudMS <= l.loudGateMS || l.loudMS <= 0 || math.IsNaN(float64(l.loudMS)) {
 		return
 	}
 	desired := float32(math.Sqrt(float64(l.targetMS / l.loudMS)))
+	if math.IsNaN(float64(desired)) || math.IsInf(float64(desired), 0) {
+		desired = 1
+	}
+	if math.IsNaN(float64(l.autoGain)) || l.autoGain <= 0 {
+		l.autoGain = 1
+	}
 	desired = ClampF32(desired, 1/l.maxBoost, l.maxBoost)
 	l.autoGain += l.alphaAuto * (desired - l.autoGain)
 }
 
-// absF32 returns the magnitude of v.
+func sanitizeF32(v float32) float32 {
+	if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+		return 0
+	}
+	if math.Abs(float64(v)) < 1e-30 {
+		return 0
+	}
+	return v
+}
+
 func absF32(v float32) float32 {
 	if v < 0 {
 		return -v
@@ -381,9 +388,10 @@ func absF32(v float32) float32 {
 	return v
 }
 
-// clampCeiling bounds v to [-c, c]; a float-rounding guard so the output
-// strictly never exceeds the ceiling.
 func clampCeiling(v, c float32) float32 {
+	if math.IsNaN(float64(v)) {
+		return 0
+	}
 	if v > c {
 		return c
 	}

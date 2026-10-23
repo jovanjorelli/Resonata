@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 
 echo "Cleaning repository structure..."
 
-mkdir -p bin test_data examples samples scripts/generators docs
+mkdir -p bin test_data examples samples docs
 
 moved=0
 for ext in wav mid json sfz; do

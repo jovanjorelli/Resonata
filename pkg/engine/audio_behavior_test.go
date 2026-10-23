@@ -67,6 +67,7 @@ func windowMax(out []float32, sr int, fromSec, toSec float64) float32 {
 	return peak
 }
 
+// TestEngineTailSilence verifies rendering decay tail silence after score playback completes.
 func TestEngineTailSilence(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -100,6 +101,7 @@ func TestEngineTailSilence(t *testing.T) {
 	}
 }
 
+// TestEngineBreathGap verifies inserting cumulative breath pause frames between distinct musical phrases.
 func TestEngineBreathGap(t *testing.T) {
 	mk := func(breath float64) *score.Score {
 		return &score.Score{
@@ -144,6 +146,7 @@ func TestEngineBreathGap(t *testing.T) {
 	}
 }
 
+// TestEngineMultiTrackIsolation verifies independent track strips render without cross-talk or voice interference.
 func TestEngineMultiTrackIsolation(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -226,6 +229,7 @@ func TestEngineMultiTrackIsolation(t *testing.T) {
 	}
 }
 
+// TestEngineHumanizeSeededAudio verifies deterministic seeded PRNG humanization creates identical audio renders across runs.
 func TestEngineHumanizeSeededAudio(t *testing.T) {
 	base := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -265,6 +269,7 @@ func TestEngineHumanizeSeededAudio(t *testing.T) {
 	}
 }
 
+// TestEngineOfflineRendererFile verifies OfflineRenderer streams 24-bit PCM WAV to disk matching engine duration.
 func TestEngineOfflineRendererFile(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -301,6 +306,7 @@ func TestEngineOfflineRendererFile(t *testing.T) {
 	}
 }
 
+// TestEngineRoomMerge verifies excess track rooms exceeding capacity merge into nearest Euclidean space without panic.
 func TestEngineRoomMerge(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -321,8 +327,7 @@ func TestEngineRoomMerge(t *testing.T) {
 	}
 }
 
-// TestEngineRoomMergeVictimLast forces the >8-room merge with the victim
-// as the last entry (unique least use), so survivor indexes stay valid.
+// TestEngineRoomMergeVictimLast verifies 9th room merges into closest active room when all slots are full.
 func TestEngineRoomMergeVictimLast(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
@@ -349,11 +354,7 @@ func TestEngineRoomMergeVictimLast(t *testing.T) {
 	}
 }
 
-// TestBUG1EngineRoomMergePanics guards BUG-1: with 9 distinct rooms
-// (hall + 8 objects) at equal use the merge victim is entry 0 while the
-// nearest survivor sits at the last index. The repoint must use the
-// post-removal index (pkg/engine/phrase.go), otherwise assignRooms
-// panics with index out of range.
+// TestBUG1EngineRoomMergePanics proves room merging with 9 distinct rooms never panics or overflows buffer bounds.
 func TestBUG1EngineRoomMergePanics(t *testing.T) {
 	s := &score.Score{
 		Metadata: score.Metadata{Title: "T", BPM: 120, TimeSignature: "4/4"},
